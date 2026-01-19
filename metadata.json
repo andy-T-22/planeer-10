@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Minimalist Dark Daily Planner",
+  "description": "A modern, dark-themed daily planner with Firebase authentication and real-time Firestore synchronization.",
+  "requestFramePermissions": []
+}

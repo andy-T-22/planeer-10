@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Planner Pro - Minimalist</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        dark: {
+                            950: '#050505',
+                            900: '#0a0a0a',
+                            800: '#171717',
+                            700: '#262626',
+                            600: '#404040'
+                        },
+                        accent: '#6366f1'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #ededed;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #404040; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 30px #171717 inset !important;
+            -webkit-text-fill-color: white !important;
+        }
+
+        .time-block {
+            transition: all 0.2s ease;
+        }
+        .time-block:hover {
+            filter: brightness(1.2);
+            transform: scale(1.02);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body class="bg-dark-900">
+    <div id="root"></div>
+
+    <!-- Carga de módulos vía ESM para máxima compatibilidad -->
+    <script type="module">
+        import React, { useState, useEffect, useCallback, useMemo } from 'https://esm.sh/react@19.0.0';
+        import { createRoot } from 'https://esm.sh/react-dom@19.0.0/client';
+        import htm from 'https://esm.sh/htm';
+        
+        // Importación de Firebase desde el CDN oficial
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, onSnapshot, setDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const html = htm.bind(React.createElement);
+
+        // --- Configuración de Firebase ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDDTOTQDYxbpRT547Cf0-hO014pl3T3JUo",
+            authDomain: "mi-planner-88ef4.firebaseapp.com",
+            projectId: "mi-planner-88ef4",
+            storageBucket: "mi-planner-88ef4.firebasestorage.app",
+            messagingSenderId: "252241778516",
+            appId: "1:252241778516:web:e87349948d01f34ca59ac1",
+            measurementId: "G-JGWJFMWD9M"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Constantes ---
+        const COLORS = [
+            { name: 'Red', hex: '#FFADAD' },
+            { name: 'Orange', hex: '#FFD6A5' },
+            { name: 'Yellow', hex: '#FDFFB6' },
+            { name: 'Green', hex: '#CAFFBF' },
+            { name: 'Blue', hex: '#9BF6FF' },
+            { name: 'Indigo', hex: '#A0C4FF' },
+            { name: 'Purple', hex: '#BDB2FF' },
+            { name: 'Pink', hex: '#FFC6FF' },
+        ];
+
+        const HOURS = Array.from({ length: 18 }, (_, i) => {
+            const h = i + 6;
+            return h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+        });
+
+        const INTERVALS = [0, 10, 20, 30, 40, 50];
+        const DAYS_OF_WEEK = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+        // --- Componentes ---
+
+        const AuthForm = () => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+                try {
+                    if (isLogin) {
+                        await signInWithEmailAndPassword(auth, email, password);
+                    } else {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                    }
+                } catch (err) {
+                    setError(err.message.replace('Firebase: ', ''));
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return html`
+                <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-dark-950">
+                    <div className="w-full max-w-md bg-dark-900 border border-dark-800 rounded-3xl p-10 shadow-2xl animate-fadeIn">
+                        <div className="mb-10 text-center">
+                            <h2 className="text-4xl font-bold mb-3 text-white tracking-tight italic">DAILY PLANNER</h2>
+                            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest">
+                                ${isLogin ? 'Welcome back' : 'Join the elite'}
+                            </p>
+                        </div>
+                        
+                        <form onSubmit=${handleSubmit} className="space-y-6">
+                            <input 
+                                type="email" 
+                                value=${email} 
+                                onChange=${(e) => setEmail(e.target.value)}
+                                className="w-full bg-dark-800 border border-dark-700 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent transition-all placeholder-neutral-600"
+                                placeholder="Email"
+                                required
+                            />
+                            <input 
+                                type="password" 
+                                value=${password} 
+                                onChange=${(e) => setPassword(e.target.value)}
+                                className="w-full bg-dark-800 border border-dark-700 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent transition-all placeholder-neutral-600"
+                                placeholder="Password"
+                                required
+                            />
+                            ${error && html`<p className="text-red-400 text-xs text-center">${error}</p>`}
+                            <button 
+                                type="submit"
+                                disabled=${loading}
+                                className="w-full bg-accent hover:bg-indigo-500 text-white font-bold py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                ${loading ? '...' : (isLogin ? 'Sign In' : 'Sign Up')}
+                            </button>
+                        </form>
+                        
+                        <div className="mt-8 text-center">
+                            <button 
+                                onClick=${() => setIsLogin(!isLogin)}
+                                className="text-xs text-neutral-500 hover:text-white transition-colors font-bold uppercase tracking-widest"
+                            >
+                                ${isLogin ? "Create an account" : "I have an account"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const Planner = ({ user }) => {
+            const [selectedColor, setSelectedColor] = useState(COLORS[0].hex);
+            const [loading, setLoading] = useState(true);
+            const [state, setState] = useState({
+                month: new Date().getMonth() + 1,
+                day: new Date().getDate(),
+                dayOfWeek: DAYS_OF_WEEK[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1],
+                goal: '',
+                tasks: Array.from({ length: 12 }, (_, i) => ({
+                    id: `task-${i}`,
+                    completed: false,
+                    description: '',
+                    details: '',
+                    colorId: null,
+                })),
+                timeGrid: {},
+                notes: '',
+                todo: ['', '', '', ''],
+            });
+
+            useEffect(() => {
+                const docRef = doc(db, 'planners', user.uid);
+                const unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setState(prev => ({ ...prev, ...docSnap.data() }));
+                    }
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, [user.uid]);
+
+            const saveToFirebase = useCallback(async (newState) => {
+                try {
+                    await setDoc(doc(db, 'planners', user.uid), {
+                        ...newState,
+                        lastUpdated: Timestamp.now()
+                    });
+                } catch (e) {
+                    console.error("Error saving state", e);
+                }
+            }, [user.uid]);
+
+            const updateState = (updates) => {
+                const newState = { ...state, ...updates };
+                setState(newState);
+                saveToFirebase(newState);
+            };
+
+            const handleTaskChange = (id, updates) => {
+                const newTasks = state.tasks.map(t => (t.id === id ? { ...t, ...updates } : t));
+                updateState({ tasks: newTasks });
+            };
+
+            const toggleTimeBlock = (hour, interval) => {
+                const key = `${hour}:${interval}`;
+                const newGrid = { ...state.timeGrid };
+                if (selectedColor === null) {
+                    delete newGrid[key];
+                } else {
+                    newGrid[key] = selectedColor;
+                }
+                updateState({ timeGrid: newGrid });
+            };
+
+            const colorSummary = useMemo(() => {
+                const summary = {};
+                Object.values(state.timeGrid).forEach((hex) => {
+                    summary[hex] = (summary[hex] || 0) + 10;
+                });
+                return summary;
+            }, [state.timeGrid]);
+
+            const totalMinutes = useMemo(() => {
+                return Object.keys(state.timeGrid).length * 10;
+            }, [state.timeGrid]);
+
+            if (loading) return html`
+                <div className="min-h-screen flex items-center justify-center bg-dark-950">
+                    <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            `;
+
+            return html`
+                <div className="min-h-screen p-4 md:p-8 flex justify-center bg-dark-950">
+                    <div className="w-full max-w-[1000px] bg-dark-900 shadow-2xl border border-dark-800 p-6 md:p-10 flex flex-col gap-8 rounded-3xl animate-fadeIn">
+                        
+                        <div className="flex justify-between items-start">
+                            <div className="flex flex-col gap-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex flex-col">
+                                        <span className="text-5xl font-black text-white italic leading-none">
+                                            ${state.month.toString().padStart(2, '0')}.${state.day.toString().padStart(2, '0')}
+                                        </span>
+                                        <span className="text-[10px] font-black text-accent tracking-[0.4em] uppercase">${state.dayOfWeek}</span>
+                                    </div>
+                                    <div className="h-12 w-[1px] bg-dark-700 mx-2" />
+                                    <div className="flex flex-wrap gap-2">
+                                        ${COLORS.map((c) => html`
+                                            <button
+                                                key=${c.hex}
+                                                onClick=${() => setSelectedColor(c.hex)}
+                                                className=${`w-7 h-7 rounded-full border-2 transition-all ${selectedColor === c.hex ? 'border-white scale-110' : 'border-transparent'}`}
+                                                style=${{ backgroundColor: c.hex }}
+                                            />
+                                        `)}
+                                        <button
+                                            onClick=${() => setSelectedColor(null)}
+                                            className=${`w-7 h-7 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-all ${selectedColor === null ? 'border-white scale-110' : 'border-dark-700 text-neutral-600'}`}
+                                        >✕</button>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500 overflow-x-auto pb-2">
+                                    ${COLORS.map(c => html`
+                                        <div key=${c.hex} className="flex items-center gap-2 whitespace-nowrap">
+                                            <div className="w-2 h-2 rounded-full" style=${{ backgroundColor: c.hex }} />
+                                            <span>${colorSummary[c.hex] || 0}m</span>
+                                        </div>
+                                    `)}
+                                    <div className="border-l border-dark-700 pl-4 ml-2 text-white">Total: ${totalMinutes}m</div>
+                                </div>
+                            </div>
+                            <button 
+                                onClick=${() => signOut(auth)}
+                                className="text-[10px] uppercase tracking-widest font-bold text-neutral-600 hover:text-white transition-colors border-b border-transparent hover:border-white"
+                            >Logout</button>
+                        </div>
+
+                        <div className="border border-dark-700 bg-dark-800/50 p-4 h-24 relative rounded-xl">
+                            <label className="absolute -top-3 left-3 bg-dark-900 px-2 text-[10px] font-bold text-accent uppercase tracking-widest">Main Goal</label>
+                            <textarea 
+                                className="w-full h-full resize-none text-sm font-medium bg-transparent focus:outline-none text-white placeholder-neutral-600"
+                                value=${state.goal}
+                                onChange=${(e) => updateState({ goal: e.target.value })}
+                                placeholder="Focus on what matters..."
+                            />
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row gap-10">
+                            <div className="flex-[3] space-y-6">
+                                <h3 className="text-[10px] font-black border-b border-dark-800 pb-2 uppercase tracking-[0.3em] text-neutral-600">Daily Schedule</h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    ${state.tasks.map((task) => html`
+                                        <div key=${task.id} className="flex items-start gap-4 group">
+                                            <button
+                                                onClick=${() => handleTaskChange(task.id, { colorId: selectedColor })}
+                                                className="w-5 h-5 mt-1 rounded-md border border-dark-700 flex-shrink-0 transition-all hover:scale-110 shadow-lg"
+                                                style=${{ backgroundColor: task.colorId || 'transparent' }}
+                                            />
+                                            <div className="flex-1 flex flex-col border-b border-dark-800 pb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked=${task.completed}
+                                                        onChange=${(e) => handleTaskChange(task.id, { completed: e.target.checked })}
+                                                        className="w-4 h-4 accent-accent bg-dark-800 border-dark-700 rounded"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value=${task.description}
+                                                        onChange=${(e) => handleTaskChange(task.id, { description: e.target.value })}
+                                                        className=${`flex-1 text-sm bg-transparent focus:outline-none font-medium transition-all ${task.completed ? 'line-through text-neutral-600' : 'text-neutral-200'}`}
+                                                        placeholder="Task..."
+                                                    />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value=${task.details}
+                                                    onChange=${(e) => handleTaskChange(task.id, { details: e.target.value })}
+                                                    className="text-[10px] text-neutral-500 bg-transparent focus:outline-none pl-7 mt-1"
+                                                    placeholder="Details..."
+                                                />
+                                            </div>
+                                        </div>
+                                    `)}
+                                </div>
+                            </div>
+
+                            <div className="flex-[2] border-l border-dark-800 pl-0 lg:pl-10 min-w-[200px]">
+                                <div className="flex text-[9px] font-black text-neutral-600 mb-4 uppercase tracking-widest">
+                                    <div className="w-12" />
+                                    ${INTERVALS.map((int) => html`<div key=${int} className="flex-1 text-center">${int}m</div>`)}
+                                </div>
+                                <div className="space-y-1.5">
+                                    ${HOURS.map((hour) => html`
+                                        <div key=${hour} className="flex items-center gap-3 group">
+                                            <span className="w-12 text-[10px] font-bold text-neutral-500 text-right">${hour}</span>
+                                            <div className="flex-1 flex gap-1 h-5">
+                                                ${INTERVALS.map((int) => {
+                                                    const key = `${hour}:${int}`;
+                                                    const color = state.timeGrid[key];
+                                                    return html`
+                                                        <button
+                                                            key=${int}
+                                                            onClick=${() => toggleTimeBlock(hour, int)}
+                                                            className=${`time-block flex-1 rounded-sm transition-all ${!color ? 'bg-dark-800 border border-dark-700/50' : 'shadow-inner'}`}
+                                                            style=${{ backgroundColor: color }}
+                                                        />
+                                                    `;
+                                                })}
+                                            </div>
+                                        </div>
+                                    `)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row gap-8 border-t border-dark-800 pt-8 mt-4">
+                            <div className="flex-[3] border border-dark-700 bg-dark-800/20 p-4 h-44 relative rounded-2xl">
+                                <label className="absolute -top-3 left-3 bg-dark-900 px-2 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Memo / Reflection</label>
+                                <textarea
+                                    className="w-full h-full resize-none text-sm font-medium bg-transparent focus:outline-none text-white placeholder-neutral-700"
+                                    value=${state.notes}
+                                    onChange=${(e) => updateState({ notes: e.target.value })}
+                                    placeholder="Thoughts for tomorrow..."
+                                />
+                            </div>
+                            <div className="flex-[2] space-y-4">
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600">Quick Items</h4>
+                                <div className="space-y-3">
+                                    ${state.todo.map((item, i) => html`
+                                        <div key=${i} className="flex items-center gap-3 border-b border-dark-800 pb-1">
+                                            <div className="w-2 h-2 rounded-full border border-dark-600" />
+                                            <input
+                                                type="text"
+                                                value=${item}
+                                                onChange=${(e) => {
+                                                    const newTodo = [...state.todo];
+                                                    newTodo[i] = e.target.value;
+                                                    updateState({ todo: newTodo });
+                                                }}
+                                                className="flex-1 text-sm font-medium bg-transparent focus:outline-none text-neutral-300 placeholder-neutral-800"
+                                                placeholder="..."
+                                            />
+                                        </div>
+                                    `)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const unsubscribe = onAuthStateChanged(auth, (u) => {
+                    setUser(u);
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            if (loading) {
+                return html`
+                    <div className="min-h-screen flex items-center justify-center bg-dark-900 text-white">
+                        <div className="flex flex-col items-center">
+                            <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4 shadow-xl shadow-accent/20"></div>
+                            <p className="text-neutral-500 text-xs font-bold tracking-widest uppercase animate-pulse">Initializing System</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return user ? html`<${Planner} user=${user} />` : html`<${AuthForm} />`;
+        };
+
+        const container = document.getElementById('root');
+        const root = createRoot(container);
+        root.render(html`<${App} />`);
+    </script>
+</body>
+</html>
