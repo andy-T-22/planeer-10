@@ -1,661 +1,1503 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>10 Minute Planner - Study Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+    <title>Study Analytics Platform</title>
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
-            --bg-color: #FDFCF9;
-            --text-color: #5D5A50;
-            --border-color: #E2DFD6;
-            --highlight: #F5F2E7;
+            /* SEPIA / PASTEL THEME */
+            --bg-main: #fcfbf7;
+            /* Very light sepia */
+            --bg-card: #ffffff;
+            /* White for cards */
+            --bg-glass: rgba(255, 255, 255, 0.6);
+            --text-primary: #5c554b;
+            /* Warm dark grey/brown */
+            --text-secondary: #8a8175;
+            /* Lighter warm grey */
+            --border-color: #e6e2d8;
+
+            /* Pastel Accents */
+            --acc-blue: #a5ccf5;
+            /* Pastel Blue */
+            --acc-blue-dark: #74a8db;
+            --acc-pink: #f5a5c0;
+            /* Pastel Pink */
+            --acc-green: #a5f5c3;
+            /* Pastel Green */
+            --acc-green-dark: #74db9c;
+            --acc-lavender: #dcd3ff;
+            --acc-peach: #ffdfba;
         }
 
         body {
-            background-color: #F0EDE4;
-            color: var(--text-color);
-            font-family: 'Quicksand', sans-serif;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
         }
 
-        .planner-page {
-            max-width: 900px;
-            margin: 0 auto;
-            background: #FFFFFF;
-            padding: 40px;
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px -2px rgba(92, 85, 75, 0.05);
+        }
+
+        .tab-active {
+            border-bottom: 3px solid var(--acc-blue-dark);
+            color: var(--acc-blue-dark);
+            background-color: rgba(165, 204, 245, 0.1);
+        }
+
+        .tab-inactive {
+            color: var(--text-secondary);
+        }
+
+        .tab-inactive:hover {
+            color: var(--text-primary);
+            background-color: rgba(92, 85, 75, 0.03);
+        }
+
+        /* Input overrides for light theme */
+        input,
+        select {
+            background-color: #ffffff !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        input::placeholder {
+            color: #d1cbc1 !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d6d1c7;
             border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            min-height: 1100px;
-            position: relative;
         }
 
-        .header-line {
-            border-bottom: 2px solid var(--text-color);
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-        }
-
-        .selector-box {
-            display: inline-flex;
-            gap: 5px;
-            align-items: center;
-        }
-
-        .selectable {
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 13px;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-
-        .selectable.active {
-            background-color: var(--text-color);
-            color: white;
-        }
-
-        .section-title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 14px;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
+        /* MANAGER LIST STYLES */
+        .manager-item {
             display: flex;
-            align-items: center; gap: 8px;
+            align-items: center;
+            padding: 12px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.2s;
         }
 
-        input, textarea {
-            border: none;
-            background: transparent;
+        .manager-item:hover {
+            border-color: var(--acc-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .manager-item input {
+            border: none !important;
+            background: transparent !important;
+            font-weight: 500;
             width: 100%;
             outline: none;
-            color: var(--text-color);
-            font-family: inherit;
         }
 
-        .time-grid {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .time-grid th, .time-grid td {
-            border: 1px solid var(--border-color);
-            padding: 4px;
-            height: 28px;
-            text-align: center;
-            font-size: 12px;
-        }
-
-        .time-grid th {
-            font-weight: 500;
-            background-color: var(--highlight);
-        }
-
-        .grid-cell {
-            cursor: pointer;
-            transition: background 0.1s;
-        }
-
-        .grid-cell:hover { background-color: #fcfcfc; }
-
-        .auth-card {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        .color-dot {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 0 0 1px #ddd;
-        }
-        .color-dot.active { box-shadow: 0 0 0 2px var(--text-color); }
-
-        #status-indicator {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            font-size: 12px;
-            background: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 100;
-        }
-
-        .task-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 2px;
-        }
-
-        .task-check {
-            width: 18px;
-            height: 18px;
-            border-radius: 5px;
-            border: 1px solid var(--text-color);
-            cursor: pointer;
-            appearance: none;
-            background: white;
-            flex-shrink: 0;
-        }
-
-        .task-check:checked {
-            background-color: var(--text-color);
-            position: relative;
-        }
-        .task-check:checked::after {
-            content: '✓';
-            color: white;
-            position: absolute;
-            top: -1.5px;
-            left: 3.5px;
-            font-size: 12px;
-        }
-
-        .task-color-picker {
-            width: 18px;
-            height: 18px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            flex-shrink: 0;
-            background-color: #fff;
-        }
-
-        .category-input {
-            width: 80px;
-            font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 600;
-            color: #999;
-            flex-shrink: 0;
-        }
-
-        .task-input {
-            font-size: 13px;
-            width: 100%;
-        }
-
-        .calendar-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            border-radius: 50%;
-            background: #F5F2E7;
-            transition: background 0.2s;
-        }
-        .calendar-wrapper:hover {
-            background: #E2DFD6;
-        }
-        .calendar-wrapper input[type="date"] {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
+        .manager-item input:focus {
+            border-bottom: 1px solid var(--acc-blue) !important;
+            border-radius: 0 !important;
         }
     </style>
 </head>
-<body>
 
-    <!-- Pantalla de Login -->
-    <div id="auth-screen" class="fixed inset-0 bg-[#F0EDE4] flex items-center justify-center z-50">
-        <div class="auth-card text-center">
-            <h1 class="text-2xl font-bold mb-6 italic">10 Minute Planner</h1>
-            <p class="text-sm opacity-60 mb-8">Organiza tu día bloque a bloque.</p>
-            <input type="email" id="email" placeholder="Email" class="mb-4 p-3 border border-gray-200 rounded-lg bg-white">
-            <input type="password" id="password" placeholder="Contraseña" class="mb-6 p-3 border border-gray-200 rounded-lg bg-white">
-            <div class="flex flex-col gap-3">
-                <button id="login-btn" class="bg-[#5D5A50] text-white py-3 rounded-lg font-medium">Entrar</button>
-                <button id="guest-btn" class="border border-[#5D5A50] text-[#5D5A50] py-3 rounded-lg font-medium hover:bg-[#F5F2E7]">Entrar como Invitado</button>
-                <button id="register-btn" class="text-sm underline opacity-60">Crear una cuenta nueva</button>
+<body class="min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- AUTH OVERLAY -->
+    <div id="auth-overlay" class="fixed inset-0 z-50 bg-[#f4f1ea] flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-[#e6e2d8]">
+            <h1 class="text-3xl font-extrabold text-[#5c554b] mb-2 text-center tracking-tight">
+                Focus Analytics
+            </h1>
+            <p class="text-[#8a8175] text-center mb-6 text-sm">Estudio consciente y sereno.</p>
+
+            <div id="auth-msg"
+                class="hidden mb-4 p-2 text-center text-xs rounded bg-red-100 text-red-600 border border-red-200">
             </div>
-            <p id="auth-error" class="text-red-500 text-[10px] mt-4 hidden leading-tight"></p>
+
+            <div class="space-y-4">
+                <input type="email" id="auth-email" placeholder="Correo"
+                    class="w-full rounded-lg p-3 outline-none border transition-colors focus:border-[#a5ccf5]">
+                <input type="password" id="auth-pass" placeholder="Contraseña"
+                    class="w-full rounded-lg p-3 outline-none border transition-colors focus:border-[#a5ccf5]">
+                <div class="flex gap-2">
+                    <button id="btn-login"
+                        class="flex-1 bg-[#a5ccf5] hover:bg-[#74a8db] text-[#5c554b] font-bold py-3 rounded-lg transition-colors">Entrar</button>
+                    <button id="btn-register"
+                        class="flex-1 bg-[#e6e2d8] hover:bg-[#d1cbc1] text-[#5c554b] font-bold py-3 rounded-lg transition-colors">Registro</button>
+                </div>
+                <button id="btn-guest" class="w-full text-xs text-[#8a8175] hover:text-[#5c554b] py-2">Continuar como
+                    Invitado</button>
+            </div>
         </div>
     </div>
 
-    <!-- Aplicación Principal -->
-    <div id="app" class="hidden">
-        <div class="max-w-[900px] mx-auto mb-4 flex justify-between items-center px-4">
-            <div></div>
+    <!-- MAIN APP (Hidden initially) -->
+    <div id="app-container" class="flex-grow flex flex-col" style="display: none;">
+
+        <!-- HEADER -->
+        <header
+            class="h-16 border-b border-[#e6e2d8] bg-[#fcfbf7]/80 backdrop-blur flex items-center justify-between px-6 sticky top-0 z-40">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-feather-alt text-[#74a8db]"></i>
+                <span class="font-bold tracking-tight text-[#5c554b]">FocusAnalytics</span>
+            </div>
             <div class="flex items-center gap-4">
-                <span id="user-display" class="text-xs italic"></span>
-                <button id="logout-btn" class="text-xs underline">Salir</button>
+                <span id="user-display" class="text-xs text-[#8a8175] font-mono hidden md:block">User</span>
+                <button id="btn-logout"
+                    class="text-xs bg-[#e6e2d8] hover:bg-red-100 hover:text-red-500 text-[#5c554b] px-3 py-1.5 rounded transition-colors">Salir</button>
             </div>
-        </div>
+        </header>
 
-        <div class="planner-page">
-            <div class="flex justify-between items-end header-line">
-                <div class="w-2/3">
-                    <div class="section-title mb-1">Goal(s)</div>
-                    <textarea id="goals" rows="2" class="text-lg italic font-medium" placeholder="Escribe tus objetivos principales de hoy..."></textarea>
-                </div>
-                <div class="text-right">
-                    <h1 class="text-2xl font-light tracking-tighter italic">10 Minute <span class="font-bold">Planner</span></h1>
-                    <div class="mt-2">
-                        <div class="text-[10px] font-bold uppercase">Total Time:</div>
-                        <div id="total-time" class="text-2xl font-light">00:00</div>
-                    </div>
-                </div>
-            </div>
+        <!-- TABS -->
+        <nav class="flex justify-center border-b border-[#e6e2d8] bg-[#fcfbf7]/50">
+            <button onclick="switchTab('tracker')" id="tab-tracker"
+                class="px-6 py-3 text-sm font-bold transition-colors tab-active">Cronómetro</button>
+            <button onclick="switchTab('dashboard')" id="tab-dashboard"
+                class="px-6 py-3 text-sm font-bold transition-colors tab-inactive">Analítica</button>
+            <button onclick="switchTab('history')" id="tab-history"
+                class="px-6 py-3 text-sm font-bold transition-colors tab-inactive">Historial</button>
+        </nav>
 
-            <div class="flex flex-wrap gap-8 mb-8 text-sm items-center border-b border-[#E2DFD6] pb-4">
-                <div>
-                    <span class="font-bold mr-2 uppercase text-[10px]">Month:</span>
-                    <div class="selector-box" id="month-selector"></div>
-                </div>
-                <div class="flex items-center">
-                    <span class="font-bold mr-2 uppercase text-[10px]">Day:</span>
-                    <input type="text" id="day-number" placeholder="--" class="w-10 border-b border-black text-center font-bold text-lg">
-                </div>
-                <div class="flex items-center gap-4 ml-auto md:ml-0">
-                    <div class="selector-box" id="weekday-selector">
-                        <span class="selectable pointer-events-none" data-day="mon">mon</span>
-                        <span class="selectable pointer-events-none" data-day="tue">tue</span>
-                        <span class="selectable pointer-events-none" data-day="wed">wed</span>
-                        <span class="selectable pointer-events-none" data-day="thu">thu</span>
-                        <span class="selectable pointer-events-none" data-day="fri">fri</span>
-                        <span class="selectable pointer-events-none" data-day="sat">sat</span>
-                        <span class="selectable pointer-events-none" data-day="sun">sun</span>
-                    </div>
-                    <div class="calendar-wrapper" title="Seleccionar fecha">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
-                        </svg>
-                        <input type="date" id="calendar-input">
-                    </div>
-                </div>
-            </div>
+        <!-- CONTENT AREA -->
+        <main class="flex-grow p-4 md:p-8 max-w-5xl mx-auto w-full relative">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div class="pt-0">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="section-title">Timeline (10 min blocks)</div>
-                        <div class="flex gap-2" id="palette">
-                            <div class="color-dot active bg-[#FADADD]" data-color="#FADADD"></div>
-                            <div class="color-dot bg-[#D1EADE]" data-color="#D1EADE"></div>
-                            <div class="color-dot bg-[#D1E5F0]" data-color="#D1E5F0"></div>
-                            <div class="color-dot bg-[#E8DFF5]" data-color="#E8DFF5"></div>
-                            <div class="color-dot bg-white" data-color="white"></div>
+            <!-- TRACKER VIEW -->
+            <section id="view-tracker" class="fade-in space-y-8">
+
+                <div class="flex justify-end">
+                    <button onclick="toggleSettings()" class="text-[#8a8175] hover:text-[#5c554b]">
+                        <i class="fas fa-cog"></i> Config
+                    </button>
+                </div>
+
+                <!-- Setup Panel (Only visible if not running) -->
+                <div id="tracker-setup" class="glass p-8 rounded-3xl max-w-lg mx-auto transform transition-all">
+                    <h2 class="text-xl font-bold mb-6 text-[#5c554b] text-center">Configurar Sesión</h2>
+
+                    <div class="space-y-6 mb-8">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-xs text-[#8a8175] uppercase font-bold tracking-wider">Materia</label>
+                                <button onclick="openManager('Subjects')"
+                                    class="text-xs text-[#74a8db] hover:underline">Gestionar</button>
+                            </div>
+                            <select id="sel-subject"
+                                class="w-full rounded-xl p-3 text-sm shadow-sm outline-none border focus:ring-2 focus:ring-[#a5ccf5]">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-xs text-[#8a8175] uppercase font-bold tracking-wider">Método</label>
+                                <button onclick="openManager('Methods')"
+                                    class="text-xs text-[#74a8db] hover:underline">Gestionar</button>
+                            </div>
+                            <select id="sel-method"
+                                class="w-full rounded-xl p-3 text-sm shadow-sm outline-none border focus:ring-2 focus:ring-[#a5ccf5]">
+                                <!-- Populated dynamically -->
+                            </select>
                         </div>
                     </div>
-                    
-                    <table class="time-grid">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px;">Hr</th>
-                                <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th><th>60</th>
-                            </tr>
-                        </thead>
-                        <tbody id="grid-body"></tbody>
-                    </table>
+
+                    <button onclick="startSession()"
+                        class="w-full bg-[#a5ccf5] hover:bg-[#92bde8] text-[#5c554b] font-bold py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all transform hover:scale-[1.02] border border-[#74a8db]/20">
+                        <i class="fas fa-play mr-2 text-[#5c554b]"></i> INICIAR ESTUDIO
+                    </button>
                 </div>
 
-                <div class="flex flex-col gap-8 pt-0">
-                    <section>
-                        <div class="section-title">Tasks</div>
-                        <div id="tasks-list"></div>
-                        <button id="add-task-btn" class="text-[10px] mt-2 opacity-50 uppercase tracking-widest">+ Add task line</button>
-                    </section>
-
-                    <div class="grid grid-cols-2 gap-4 mt-auto">
-                        <section>
-                            <div class="section-title text-[12px]">Notes:</div>
-                            <textarea id="notes" rows="10" class="p-2 border border-[#E2DFD6] rounded bg-[#FDFCF9] text-xs"></textarea>
-                        </section>
-                        <section>
-                            <div class="section-title text-[12px]">To do:</div>
-                            <textarea id="todo" rows="10" class="p-2 border border-[#E2DFD6] rounded bg-[#FDFCF9] text-xs"></textarea>
-                        </section>
+                <!-- Active Timer Panel (Hidden by default) -->
+                <div id="tracker-active" class="hidden text-center max-w-lg mx-auto">
+                    <div class="mb-8">
+                        <span id="active-subject"
+                            class="bg-[#dcd3ff] text-[#5c554b] px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm">Materia</span>
+                        <div id="active-method" class="text-[#8a8175] text-sm mt-3 font-medium">Método</div>
                     </div>
+
+                    <!-- Main Clock (No Spinner) -->
+                    <div class="relative py-12 mb-8">
+                        <div id="timer-display" class="text-7xl font-black mono text-[#5c554b] tracking-tighter">00:00
+                        </div>
+                        <div class="text-xs text-[#8a8175] mt-2 uppercase tracking-widest">Tiempo Neto</div>
+                    </div>
+
+                    <div class="flex justify-center gap-4">
+                        <button onclick="pauseSession()"
+                            class="bg-[#ffdfba] hover:bg-[#fccca0] text-[#5c554b] font-bold px-8 py-4 rounded-2xl transition-transform hover:scale-105 shadow-sm">
+                            <i class="fas fa-pause mr-2"></i> Pausar
+                        </button>
+                        <button onclick="stopSession()"
+                            class="bg-[#e6e2d8] hover:bg-[#f5a5c0] hover:text-[#5c554b] text-[#5c554b] font-bold px-8 py-4 rounded-2xl transition-colors shadow-sm">
+                            <i class="fas fa-stop mr-2"></i> Terminar
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- DASHBOARD VIEW -->
+            <section id="view-dashboard" class="hidden fade-in space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Stat Card -->
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="text-[#8a8175] text-xs font-bold uppercase mb-4">Eficiencia Global</h3>
+                        <div class="h-48 relative">
+                            <canvas id="chart-efficiency"></canvas>
+                            <div id="efficiency-number"
+                                class="absolute inset-0 flex items-center justify-center text-4xl font-bold text-[#5c554b]">
+                                --%</div>
+                        </div>
+                    </div>
+
+                    <!-- Interruption Reasons (NEW) -->
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="text-[#8a8175] text-xs font-bold uppercase mb-4">Interrupciones Comunes</h3>
+                        <div class="h-48">
+                            <canvas id="chart-interruptions"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Hours Chart -->
+                    <div class="glass p-6 rounded-3xl md:col-span-2">
+                        <h3 class="text-[#8a8175] text-xs font-bold uppercase mb-4">Tiempo por Materia</h3>
+                        <div class="h-64">
+                            <canvas id="chart-subjects"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- HISTORY VIEW -->
+            <section id="view-history" class="hidden fade-in">
+                <div class="flex justify-end mb-4">
+                    <button onclick="openManualEntry()"
+                        class="bg-[#a5ccf5] hover:bg-[#74a8db] text-[#5c554b] px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-colors flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Agregar Sesión
+                    </button>
+                </div>
+
+                <div class="glass rounded-3xl overflow-hidden shadow-sm">
+                    <div class="glass rounded-3xl overflow-hidden shadow-sm">
+                        <table class="w-full text-left text-sm text-[#5c554b]">
+                            <thead class="bg-[#f0ece4] uppercase text-xs font-bold text-[#8a8175]">
+                                <tr>
+                                    <th class="p-5">Fecha</th>
+                                    <th class="p-5">Materia</th>
+                                    <th class="p-5">Tiempo</th>
+                                    <th class="p-5 text-right">Efic.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list" class="divide-y divide-[#e6e2d8]">
+                                <!-- Injected JS -->
+                            </tbody>
+                        </table>
+                    </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: PAUSE REASON -->
+    <div id="modal-pause"
+        class="fixed inset-0 z-50 bg-[#5c554b]/40 flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-3xl max-w-sm w-full mx-4 shadow-2xl">
+            <h3 class="text-xl font-bold text-[#5c554b] mb-2 text-center">Registrar Interrupción</h3>
+            <p class="text-xs text-[#8a8175] mb-6 text-center">¿Cuál fue el motivo?</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="confirmPause('Descanso')"
+                    class="p-4 rounded-xl bg-[#f0ece4] hover:bg-[#a5ccf5] text-[#5c554b] text-sm font-bold transition-colors">
+                    ☕ Descanso
+                </button>
+                <button onclick="confirmPause('Celular')"
+                    class="p-4 rounded-xl bg-[#f0ece4] hover:bg-[#f5a5c0] text-[#5c554b] text-sm font-bold transition-colors">
+                    📱 Celular
+                </button>
+                <button onclick="confirmPause('Llamada')"
+                    class="p-4 rounded-xl bg-[#f0ece4] hover:bg-[#a5f5c3] text-[#5c554b] text-sm font-bold transition-colors">
+                    📞 Llamada
+                </button>
+                <button onclick="customPauseReason()"
+                    class="p-4 rounded-xl bg-[#f0ece4] hover:bg-[#dcd3ff] text-[#5c554b] text-sm font-bold transition-colors">
+                    ✏️ Otro...
+                </button>
+            </div>
+
+            <div class="text-center mt-6">
+                <button onclick="resumeSession()"
+                    class="text-[#8a8175] hover:text-[#5c554b] text-xs font-bold uppercase tracking-wide">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAUSED OVERLAY -->
+    <div id="overlay-paused"
+        class="fixed inset-0 z-40 bg-[#fcfbf7]/95 flex flex-col items-center justify-center hidden">
+        <div class="text-6xl mb-6 animate-pulse text-[#5c554b]">⏸️</div>
+        <h2 class="text-4xl font-black text-[#5c554b] mb-2 tracking-tight">PAUSA</h2>
+        <p class="text-[#8a8175] text-xl mb-10" id="pause-reason-display">...</p>
+        <button onclick="resumeSession()"
+            class="bg-[#a5f5c3] hover:bg-[#91e8b2] text-[#5c554b] font-bold px-12 py-5 rounded-full text-xl shadow-lg transition-transform hover:scale-105">
+            REANUDAR
+        </button>
+    </div>
+
+    <!-- MODAL: SETTINGS -->
+    <div id="modal-settings"
+        class="fixed inset-0 z-50 bg-[#5c554b]/40 flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl max-w-sm w-full mx-4 shadow-xl">
+            <h3 class="text-xl font-bold text-[#5c554b] mb-6">Configuraciones</h3>
+
+            <div class="flex items-center justify-between mb-6">
+                <span class="text-[#5c554b] font-medium">Mostrar Segundos</span>
+                <button id="btn-toggle-seconds" onclick="toggleSecondsOption()"
+                    class="w-12 h-6 bg-[#d1cbc1] rounded-full relative transition-colors duration-300">
+                    <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300">
+                    </div>
+                </button>
+            </div>
+
+            <div class="flex justify-end">
+                <button onclick="document.getElementById('modal-settings').classList.add('hidden')"
+                    class="bg-[#e6e2d8] text-[#5c554b] px-4 py-2 rounded-lg font-bold">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: MANAGER (Subjects / Methods) -->
+    <div id="modal-manager"
+        class="fixed inset-0 z-[60] bg-[#5c554b]/50 flex items-center justify-center hidden backdrop-blur-sm">
+        <div
+            class="bg-[#fcfbf7] rounded-3xl w-full max-w-md mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+
+            <!-- Header -->
+            <div class="p-6 border-b border-[#e6e2d8] flex justify-between items-center bg-white/50 backdrop-blur">
+                <h3 id="manager-title" class="text-lg font-bold text-[#5c554b]">Gestionar</h3>
+                <button onclick="closeManager()" class="text-[#8a8175] hover:text-[#5c554b] transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- List Body -->
+            <div id="manager-list" class="p-6 space-y-3 overflow-y-auto flex-1">
+                <!-- Injected Items -->
+            </div>
+
+            <!-- Footer (Add) -->
+            <div class="p-4 border-t border-[#e6e2d8] bg-white/50 backdrop-blur">
+                <button onclick="addManagerItem()"
+                    class="w-full py-3 rounded-xl border-2 border-dashed border-[#a5ccf5] text-[#74a8db] hover:bg-[#a5ccf5]/10 hover:border-[#74a8db] font-bold transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i> Agregar Nuevo
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: SESSION DETAILS -->
+    <div id="modal-detail"
+        class="fixed inset-0 z-[70] bg-[#5c554b]/60 flex items-center justify-center hidden backdrop-blur-sm">
+        <div
+            class="bg-[#fcfbf7] rounded-3xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+
+            <!-- Header -->
+            <div class="p-6 border-b border-[#e6e2d8] flex justify-between items-center bg-white/50">
+                <div>
+                    <h3 class="text-xl font-bold text-[#5c554b]">Detalle de Sesión</h3>
+                    <p id="detail-date" class="text-xs text-[#8a8175] font-mono mt-1">...</p>
+                </div>
+                <button onclick="closeDetail()" class="text-[#8a8175] hover:text-[#5c554b] p-2">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8 overflow-y-auto">
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-4 rounded-2xl border border-[#e6e2d8]">
+                        <div class="text-xs text-[#8a8175] uppercase font-bold">Tiempo Neto</div>
+                        <div id="detail-net" class="text-xl font-black text-[#5c554b] mt-1">--</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-[#e6e2d8]">
+                        <div class="text-xs text-[#8a8175] uppercase font-bold">Total</div>
+                        <div id="detail-gross" class="text-xl font-black text-[#5c554b] mt-1">--</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-[#e6e2d8]">
+                        <div class="text-xs text-[#8a8175] uppercase font-bold">Pausas <span id="detail-pause-time"
+                                class="text-[10px] font-normal text-gray-400 ml-1"></span></div>
+                        <div id="detail-pauses" class="text-xl font-black text-[#5c554b] mt-1">--</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-[#e6e2d8]">
+                        <div class="text-xs text-[#8a8175] uppercase font-bold">Eficiencia</div>
+                        <div id="detail-efficiency" class="text-xl font-black text-[#5c554b] mt-1">--%</div>
+                    </div>
+                </div>
+
+                <!-- Editable Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="text-xs text-[#8a8175] uppercase font-bold mb-2 block">Materia</label>
+                        <select id="detail-subject" disabled
+                            class="w-full p-3 rounded-xl border border-[#e6e2d8] bg-transparent text-[#5c554b] font-bold outline-none focus:border-[#a5ccf5] disabled:opacity-70 disabled:bg-gray-50/50">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-[#8a8175] uppercase font-bold mb-2 block">Método</label>
+                        <select id="detail-method" disabled
+                            class="w-full p-3 rounded-xl border border-[#e6e2d8] bg-transparent text-[#5c554b] font-bold outline-none focus:border-[#a5ccf5] disabled:opacity-70 disabled:bg-gray-50/50">
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Timeline Chart -->
+                <div class="mb-4">
+                    <h4 class="text-sm font-bold text-[#5c554b] mb-4">Línea de Tiempo</h4>
+                    <div class="h-32 bg-white rounded-2xl border border-[#e6e2d8] p-4 relative">
+                        <canvas id="chart-timeline"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="p-6 border-t border-[#e6e2d8] bg-white/50 flex justify-between">
+                <button onclick="promptDeleteSession()"
+                    class="text-red-400 hover:text-red-600 font-bold text-sm px-4 py-2 hover:bg-red-50 rounded-lg transition-colors">
+                    <i class="fas fa-trash mr-2"></i> Eliminar
+                </button>
+
+                <div class="flex gap-3">
+                    <button id="btn-edit-session" onclick="toggleEditSession()"
+                        class="text-[#74a8db] hover:bg-blue-50 px-6 py-2 rounded-xl font-bold transition-colors">
+                        Editar
+                    </button>
+                    <button id="btn-save-session" onclick="saveSessionChanges()"
+                        class="hidden bg-[#a5ccf5] hover:bg-[#74a8db] text-[#5c554b] px-6 py-2 rounded-xl font-bold transition-colors shadow-sm">
+                        Guardar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="status-indicator">Guardado automáticamente</div>
+    <!-- MODAL: MANUAL ENTRY -->
+    <div id="modal-manual"
+        class="fixed inset-0 z-[70] bg-[#5c554b]/60 flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-md mx-4 shadow-2xl">
+            <h3 class="text-xl font-bold text-[#5c554b] mb-6">Agregar Sesión Manual</h3>
 
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="block text-xs text-[#8a8175] uppercase font-bold mb-1">Fecha</label>
+                    <input type="date" id="man-date"
+                        class="w-full p-3 rounded-xl border outline-none focus:border-[#a5ccf5]">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-[#8a8175] uppercase font-bold mb-1">Inicio</label>
+                        <input type="time" id="man-start"
+                            class="w-full p-3 rounded-xl border outline-none focus:border-[#a5ccf5]">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-[#8a8175] uppercase font-bold mb-1">Fin</label>
+                        <input type="time" id="man-end"
+                            class="w-full p-3 rounded-xl border outline-none focus:border-[#a5ccf5]">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-[#8a8175] uppercase font-bold mb-1">Materia</label>
+                        <select id="man-subject"
+                            class="w-full p-3 rounded-xl border outline-none focus:border-[#a5ccf5]"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-[#8a8175] uppercase font-bold mb-1">Método</label>
+                        <select id="man-method"
+                            class="w-full p-3 rounded-xl border outline-none focus:border-[#a5ccf5]"></select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-[#8a8175] uppercase font-bold mb-1">Minutos de Pausa (Op.)</label>
+                    <input type="number" id="man-pause" min="0" value="0"
+                        class="w-full p-3 rounded-xl border outline-none focus:border-[#a5ccf5]">
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-manual').classList.add('hidden')"
+                    class="flex-1 text-[#8a8175] font-bold hover:bg-gray-100 py-3 rounded-xl">Cancelar</button>
+                <button onclick="saveManualEntry()"
+                    class="flex-1 bg-[#a5f5c3] hover:bg-[#74db9c] text-[#5c554b] font-bold py-3 rounded-xl shadow-sm">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, deleteDoc, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyDDTOTQDYxbpRT547Cf0-hO014pl3T3JUo",
             authDomain: "mi-planner-88ef4.firebaseapp.com",
             projectId: "mi-planner-88ef4",
             storageBucket: "mi-planner-88ef4.firebasestorage.app",
             messagingSenderId: "252241778516",
-            appId: "1:252241778516:web:e87349948d01f34ca59ac1"
+            appId: "1:252241778516:web:e87349948d01f34ca59ac1",
+            measurementId: "G-JGWJFMWD9M"
         };
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const auth = getAuth(firebaseApp);
-        const db = getFirestore(firebaseApp);
-        const appId = "planner-study-v2";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
+        // --- STATE ---
         let currentUser = null;
-        let selectedColor = "#FADADD";
-        let saveTimeout = null;
+        let activeSession = null;
+        let timerInterval = null;
 
-        function initApp(user) {
-            currentUser = user;
-            const authScreen = document.getElementById('auth-screen');
-            const appMain = document.getElementById('app');
-            const userDisplay = document.getElementById('user-display');
+        // Load settings or defaults
+        let appSettings = JSON.parse(localStorage.getItem('app_settings') || '{"showSeconds": true}');
 
-            if (user) {
-                authScreen.classList.add('hidden');
-                appMain.classList.remove('hidden');
-                userDisplay.textContent = user.isLocal ? 'Modo Invitado (Local)' : (user.isAnonymous ? 'Modo Invitado' : user.email);
-                
-                setupUI();
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('calendar-input').value = today;
-                syncUIFromDate(today);
-                loadDate(today);
-            } else {
-                authScreen.classList.remove('hidden');
-                appMain.classList.add('hidden');
-            }
-        }
+        // Load lists or defaults
+        let subjects = JSON.parse(localStorage.getItem('study_subjects') || '["Matemáticas", "Historia", "Programación", "Idioma"]');
+        let methods = JSON.parse(localStorage.getItem('study_methods') || '["Leer", "Resumir", "Ejercicios", "Repaso"]');
 
-        function setupUI() {
-            const monthSel = document.getElementById('month-selector');
-            if (monthSel.innerHTML === "") {
-                for(let i=1; i<=12; i++) {
-                    const s = document.createElement('span');
-                    s.className = 'selectable month-item';
-                    s.innerText = i;
-                    s.onclick = () => {
-                        const currentVal = document.getElementById('calendar-input').value;
-                        const parts = currentVal.split('-');
-                        const newDate = `${parts[0]}-${i.toString().padStart(2,'0')}-${parts[2]}`;
-                        updateDateFromUI(newDate);
-                    };
-                    monthSel.appendChild(s);
-                }
+        // --- DOM ---
+        const dom = {
+            auth: document.getElementById('auth-overlay'),
+            app: document.getElementById('app-container'),
+            views: {
+                tracker: document.getElementById('view-tracker'),
+                dashboard: document.getElementById('view-dashboard'),
+                history: document.getElementById('view-history')
+            },
+            trackerSetup: document.getElementById('tracker-setup'),
+            trackerActive: document.getElementById('tracker-active'),
+            timerDisplay: document.getElementById('timer-display'),
+            modalPause: document.getElementById('modal-pause'),
+            modalSettings: document.getElementById('modal-settings'),
+            overlayPaused: document.getElementById('overlay-paused'),
+            historyList: document.getElementById('history-list'),
+            selSubject: document.getElementById('sel-subject'),
+            selMethod: document.getElementById('sel-method'),
+            btnToggleSeconds: document.getElementById('btn-toggle-seconds'),
 
-                const gridBody = document.getElementById('grid-body');
-                gridBody.innerHTML = "";
-                for(let h=5; h<=24; h++) {
-                    const tr = document.createElement('tr');
-                    const hrCell = document.createElement('td');
-                    hrCell.className = 'font-bold bg-[#F5F2E7]';
-                    hrCell.innerText = h.toString().padStart(2, '0');
-                    tr.appendChild(hrCell);
+            // Manager DOM
+            modalManager: document.getElementById('modal-manager'),
+            managerTitle: document.getElementById('manager-title'),
+            managerList: document.getElementById('manager-list'),
 
-                    for(let m=1; m<=6; m++) {
-                        const td = document.createElement('td');
-                        td.className = 'grid-cell';
-                        td.dataset.id = `h${h}m${m*10}`;
-                        td.onclick = function() {
-                            this.style.backgroundColor = (this.style.backgroundColor === selectedColor) ? '' : selectedColor;
-                            updateTotalTime();
-                            triggerSave();
-                        };
-                        tr.appendChild(td);
-                    }
-                    gridBody.appendChild(tr);
-                }
+            // Detail DOM
+            modalDetail: document.getElementById('modal-detail'),
+            detailDate: document.getElementById('detail-date'),
+            detailNet: document.getElementById('detail-net'),
+            detailGross: document.getElementById('detail-gross'),
+            detailPauses: document.getElementById('detail-pauses'),
+            detailPauseTime: document.getElementById('detail-pause-time'),
+            detailEfficiency: document.getElementById('detail-efficiency'),
+            detailSubject: document.getElementById('detail-subject'),
+            detailMethod: document.getElementById('detail-method'),
 
-                document.querySelectorAll('.color-dot').forEach(dot => {
-                    dot.onclick = () => {
-                        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-                        dot.classList.add('active');
-                        selectedColor = dot.dataset.color;
-                    };
-                });
+            // Manual DOM
+            modalManual: document.getElementById('modal-manual'),
+            manSubject: document.getElementById('man-subject'),
+            manMethod: document.getElementById('man-method')
+        };
 
-                document.querySelectorAll('input, textarea').forEach(el => {
-                    if(!el.classList.contains('task-input') && !el.classList.contains('category-input') && el.id !== 'day-number' && el.id !== 'calendar-input') {
-                        el.oninput = () => triggerSave();
-                    }
-                });
-            }
-        }
+        // --- AUTH ---
+        document.getElementById('btn-login').addEventListener('click', () => authAction(signInWithEmailAndPassword));
+        document.getElementById('btn-register').addEventListener('click', () => authAction(createUserWithEmailAndPassword));
+        document.getElementById('btn-guest').addEventListener('click', () => initApp(null));
+        document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth); location.reload(); });
 
-        // --- FUNCIÓN DE SINCRONIZACIÓN MAESTRA ---
-        function updateDateFromUI(newDateStr) {
-            // Validar fecha
-            const testDate = new Date(newDateStr);
-            if (isNaN(testDate.getTime())) return;
-
-            const finalDate = testDate.toISOString().split('T')[0];
-            document.getElementById('calendar-input').value = finalDate;
-            syncUIFromDate(finalDate);
-            loadDate(finalDate);
-        }
-
-        function syncUIFromDate(dateStr) {
-            const [y, m, d] = dateStr.split('-');
-            const dateObj = new Date(y, m - 1, d);
-            
-            // Actualizar número de día
-            document.getElementById('day-number').value = parseInt(d);
-
-            // Actualizar Mes
-            document.querySelectorAll('.month-item').forEach(item => {
-                if(item.innerText == parseInt(m)) item.classList.add('active');
-                else item.classList.remove('active');
-            });
-
-            // Actualizar Día de la semana
-            const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-            const weekday = daysMap[dateObj.getDay()];
-            document.querySelectorAll('#weekday-selector .selectable').forEach(s => {
-                if(s.dataset.day === weekday) s.classList.add('active');
-                else s.classList.remove('active');
-            });
-        }
-
-        const addTaskLine = (initialData = null) => {
-            const div = document.createElement('div');
-            div.className = 'task-row';
-            const checked = initialData?.done ? 'checked' : '';
-            const color = initialData?.color || '#ffffff';
-            const category = initialData?.category || '';
-            const text = initialData?.text || '';
-
-            div.innerHTML = `
-                <input type="checkbox" class="task-check" ${checked}>
-                <div class="task-color-picker" style="background-color: ${color}"></div>
-                <input type="text" class="category-input" placeholder="CAT" value="${category}">
-                <input type="text" class="task-input" placeholder="Nueva tarea..." value="${text}">
-            `;
-
-            div.querySelector('.task-color-picker').onclick = function() {
-                this.style.backgroundColor = selectedColor;
-                triggerSave();
-            };
-
-            div.querySelectorAll('input').forEach(input => {
-                input.oninput = () => triggerSave();
-                input.onchange = () => triggerSave();
-            });
-
-            document.getElementById('tasks-list').appendChild(div);
-        }
-
-        function updateTotalTime() {
-            const cells = document.querySelectorAll('.grid-cell');
-            let count = 0;
-            cells.forEach(c => {
-                if(c.style.backgroundColor && c.style.backgroundColor !== 'white' && c.style.backgroundColor !== 'transparent') count++;
-            });
-            const totalMins = count * 10;
-            const h = Math.floor(totalMins / 60);
-            const m = totalMins % 60;
-            document.getElementById('total-time').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-        }
-
-        const loadDate = async (dateStr) => {
-            if(!currentUser) return;
-            resetUI();
-            
-            let data = null;
-            if (currentUser.isLocal) {
-                const localData = localStorage.getItem(`planner_${currentUser.uid}_${dateStr}`);
-                if (localData) data = JSON.parse(localData);
-            } else {
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'days', dateStr);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) data = snap.data();
-            }
-
-            if(data) {
-                document.getElementById('goals').value = data.goals || "";
-                document.getElementById('notes').value = data.notes || "";
-                document.getElementById('todo').value = data.todo || "";
-                document.getElementById('total-time').innerText = data.totalTime || "00:00";
-
-                if(data.grid) {
-                    Object.entries(data.grid).forEach(([id, color]) => {
-                        const cell = document.querySelector(`[data-id="${id}"]`);
-                        if(cell) cell.style.backgroundColor = color;
-                    });
-                }
-
-                if(data.tasks && data.tasks.length > 0) {
-                    document.getElementById('tasks-list').innerHTML = '';
-                    data.tasks.forEach(t => addTaskLine(t));
-                } else {
-                    for(let i=0; i<10; i++) addTaskLine();
-                }
-            } else {
-                for(let i=0; i<10; i++) addTaskLine();
-            }
-        }
-
-        function resetUI() {
-            document.querySelectorAll('.grid-cell').forEach(c => c.style.backgroundColor = '');
-            document.getElementById('goals').value = "";
-            document.getElementById('notes').value = "";
-            document.getElementById('todo').value = "";
-            document.getElementById('total-time').innerText = "00:00";
-            document.getElementById('tasks-list').innerHTML = "";
-        }
-
-        function triggerSave() {
-            const indicator = document.getElementById('status-indicator');
-            indicator.style.opacity = '1';
-            
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(async () => {
-                if(!currentUser) return;
-                const date = document.getElementById('calendar-input').value;
-                if(!date) return;
-
-                const grid = {};
-                document.querySelectorAll('.grid-cell').forEach(c => {
-                    if(c.style.backgroundColor) grid[c.dataset.id] = c.style.backgroundColor;
-                });
-
-                const tasks = [];
-                document.querySelectorAll('.task-row').forEach(row => {
-                    const text = row.querySelector('.task-input').value;
-                    const done = row.querySelector('.task-check').checked;
-                    const color = row.querySelector('.task-color-picker').style.backgroundColor;
-                    const category = row.querySelector('.category-input').value;
-                    if(text || category) tasks.push({text, done, color, category});
-                });
-
-                const data = {
-                    goals: document.getElementById('goals').value,
-                    dayNumber: document.getElementById('day-number').value,
-                    notes: document.getElementById('notes').value,
-                    todo: document.getElementById('todo').value,
-                    month: document.querySelector('.month-item.active')?.innerText || "",
-                    weekday: document.querySelector('#weekday-selector .active')?.dataset.day || "",
-                    grid: grid,
-                    tasks: tasks,
-                    totalTime: document.getElementById('total-time').innerText
-                };
-
-                try {
-                    if (currentUser.isLocal) {
-                        localStorage.setItem(`planner_${currentUser.uid}_${date}`, JSON.stringify(data));
-                    } else {
-                        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'days', date), data);
-                    }
-                    setTimeout(() => indicator.style.opacity = '0', 1000);
-                } catch (e) {
-                    console.error("Save error:", e);
-                }
-            }, 1000);
-        }
-
-        const handleAuthAction = async (type) => {
-            const err = document.getElementById('auth-error');
-            err.classList.add('hidden');
+        async function authAction(method) {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
             try {
-                if(type === 'login') {
-                    const email = document.getElementById('email').value;
-                    const pass = document.getElementById('password').value;
-                    await signInWithEmailAndPassword(auth, email, pass);
-                } else if(type === 'guest') {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (e) {
-                        initApp({ uid: 'guest_local', isLocal: true });
-                    }
-                } else {
-                    const email = document.getElementById('email').value;
-                    const pass = document.getElementById('password').value;
-                    await createUserWithEmailAndPassword(auth, email, pass);
-                }
+                await method(auth, email, pass);
             } catch (e) {
-                err.innerText = "Error: " + e.message;
-                err.classList.remove('hidden');
+                const msg = document.getElementById('auth-msg');
+                msg.textContent = e.message;
+                msg.classList.remove('hidden');
             }
         }
-
-        document.getElementById('login-btn').onclick = () => handleAuthAction('login');
-        document.getElementById('guest-btn').onclick = () => handleAuthAction('guest');
-        document.getElementById('register-btn').onclick = () => handleAuthAction('register');
-        document.getElementById('logout-btn').onclick = () => {
-            if (currentUser?.isLocal) initApp(null);
-            else signOut(auth);
-        };
-        document.getElementById('add-task-btn').onclick = () => addTaskLine();
-        
-        // Eventos de cambio de fecha
-        document.getElementById('calendar-input').onchange = (e) => updateDateFromUI(e.target.value);
-
-        document.getElementById('day-number').onchange = (e) => {
-            const currentVal = document.getElementById('calendar-input').value;
-            const parts = currentVal.split('-');
-            const newDay = e.target.value.padStart(2, '0');
-            const newDate = `${parts[0]}-${parts[1]}-${newDay}`;
-            updateDateFromUI(newDate);
-        };
 
         onAuthStateChanged(auth, user => {
             if (user) initApp(user);
-            else if (!currentUser?.isLocal) initApp(null);
         });
+
+        function initApp(user) {
+            currentUser = user;
+            dom.auth.style.display = 'none';
+            dom.app.style.display = 'flex';
+            document.getElementById('user-display').textContent = user ? user.email : 'Modo Invitado';
+
+            renderDropdowns();
+            renderSettingsUI();
+
+            // Recover session if exists
+            const saved = localStorage.getItem('study_session');
+            if (saved) {
+                activeSession = JSON.parse(saved);
+                if (activeSession.status === 'running') {
+                    dom.trackerSetup.classList.add('hidden');
+                    dom.trackerActive.classList.remove('hidden');
+                    startTimerLoop();
+                    document.getElementById('active-subject').textContent = activeSession.subject;
+                    document.getElementById('active-method').textContent = activeSession.method;
+                } else if (activeSession.status === 'paused') {
+                    dom.trackerSetup.classList.add('hidden');
+                    dom.trackerActive.classList.remove('hidden');
+                    updateTimerUI();
+                    document.getElementById('pause-reason-display').textContent = "Motivo: " + (activeSession.currentPauseReason || "Desconocido");
+                    dom.overlayPaused.classList.remove('hidden');
+                }
+            }
+
+            // Allow history loading for guests too
+            loadHistory();
+        }
+
+        // --- MANAGE LISTS (NEW PRO VERSION) ---
+        function renderDropdowns() {
+            dom.selSubject.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            dom.selMethod.innerHTML = methods.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+
+        let currentManagerType = null; // 'Subjects' or 'Methods'
+
+        window.openManager = (type) => {
+            currentManagerType = type;
+            dom.managerTitle.textContent = type === 'Subjects' ? 'Gestionar Materias' : 'Gestionar Métodos';
+            dom.modalManager.classList.remove('hidden');
+            renderManagerList();
+        };
+
+        window.closeManager = () => {
+            dom.modalManager.classList.add('hidden');
+            currentManagerType = null;
+        };
+
+        function renderManagerList() {
+            const listData = currentManagerType === 'Subjects' ? subjects : methods;
+            const container = dom.managerList;
+
+            container.innerHTML = '';
+
+            listData.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'manager-item';
+                el.innerHTML = `
+                    <input type="text" value="${item}" readonly 
+                        class="text-[#5c554b] text-sm bg-transparent"
+                        id="man-input-${index}">
+                    
+                    <div class="flex items-center gap-2 ml-2">
+                        <button onclick="enableEdit(${index})" class="w-8 h-8 rounded-full hover:bg-blue-50 text-blue-400 flex items-center justify-center transition-colors">
+                            <i id="icon-edit-${index}" class="fas fa-pencil-alt text-xs"></i>
+                        </button>
+                        <button onclick="deleteItem(${index})" class="w-8 h-8 rounded-full hover:bg-red-50 text-red-400 flex items-center justify-center transition-colors">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+
+            if (listData.length === 0) {
+                container.innerHTML = `<div class="text-center text-[#8a8175] text-sm italic py-4">No hay elementos aún.</div>`;
+            }
+        }
+
+        window.addManagerItem = () => {
+            const listData = currentManagerType === 'Subjects' ? subjects : methods;
+            const storageKey = currentManagerType === 'Subjects' ? 'study_subjects' : 'study_methods';
+
+            // Add temp placeholder
+            listData.push("Nuevo Elemento");
+            saveManagerList(listData, storageKey);
+
+            // Re-render and focus the new item
+            renderManagerList();
+            const newIndex = listData.length - 1;
+            enableEdit(newIndex, true); // True means select all text immediately
+        };
+
+        window.enableEdit = (index, selectAll = false) => {
+            const input = document.getElementById(`man-input-${index}`);
+            const icon = document.getElementById(`icon-edit-${index}`);
+
+            if (input.readOnly) {
+                // Enter Edit Mode
+                input.readOnly = false;
+                input.focus();
+                if (selectAll) input.select();
+
+                // Change icon to Check/Save
+                icon.className = "fas fa-check text-green-500";
+                input.parentElement.querySelector('button').onclick = () => saveEdit(index);
+
+                // Handle Enter key
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') saveEdit(index);
+                };
+            }
+        };
+
+        window.saveEdit = (index) => {
+            const listData = currentManagerType === 'Subjects' ? subjects : methods;
+            const storageKey = currentManagerType === 'Subjects' ? 'study_subjects' : 'study_methods';
+            const input = document.getElementById(`man-input-${index}`);
+
+            const newValue = input.value.trim();
+
+            if (newValue) {
+                listData[index] = newValue;
+                saveManagerList(listData, storageKey);
+                renderManagerList();
+            } else {
+                // If empty, maybe confirm delete? Or just revert? Let's revert for safety or delete if it was new.
+                if (listData[index] === "Nuevo Elemento") {
+                    deleteItem(index);
+                } else {
+                    alert("El nombre no puede estar vacío.");
+                }
+            }
+        };
+
+        window.deleteItem = (index) => {
+            const listData = currentManagerType === 'Subjects' ? subjects : methods;
+            const storageKey = currentManagerType === 'Subjects' ? 'study_subjects' : 'study_methods';
+
+            if (confirm("¿Estás seguro de eliminar este elemento?")) {
+                listData.splice(index, 1);
+                saveManagerList(listData, storageKey);
+                renderManagerList();
+            }
+        };
+
+        function saveManagerList(data, key) {
+            localStorage.setItem(key, JSON.stringify(data));
+            renderDropdowns(); // Update main UI dropdowns immediately
+        }
+
+
+        // --- TRACKER LOGIC ---
+
+        window.startSession = () => {
+            const subject = dom.selSubject.value;
+            const method = dom.selMethod.value;
+
+            if (!subject) return alert("Por favor asigna o selecciona una materia");
+
+            activeSession = {
+                uid: currentUser ? currentUser.uid : 'guest',
+                subject,
+                method,
+                startTime: Date.now(),
+                interruptions: [],
+                status: 'running',
+                grossStartTime: Date.now()
+            };
+
+            saveLocal();
+
+            // UI
+            dom.trackerSetup.classList.add('hidden');
+            dom.trackerActive.classList.remove('hidden');
+            document.getElementById('active-subject').textContent = subject;
+            document.getElementById('active-method').textContent = method;
+
+            startTimerLoop();
+        };
+
+        // --- SETTINGS LOGIC ---
+
+        window.toggleSettings = () => {
+            dom.modalSettings.classList.remove('hidden');
+        };
+
+        window.toggleSecondsOption = () => {
+            appSettings.showSeconds = !appSettings.showSeconds;
+            localStorage.setItem('app_settings', JSON.stringify(appSettings));
+            renderSettingsUI();
+            updateTimerUI(); // Reflect immediately
+        };
+
+        function renderSettingsUI() {
+            const btn = dom.btnToggleSeconds;
+            const knob = btn.firstElementChild;
+            if (appSettings.showSeconds) {
+                btn.className = "w-12 h-6 bg-[#a5f5c3] rounded-full relative transition-colors duration-300";
+                knob.className = "w-4 h-4 bg-white rounded-full absolute top-1 right-1 transition-transform duration-300"; // Right aligned
+            } else {
+                btn.className = "w-12 h-6 bg-[#d1cbc1] rounded-full relative transition-colors duration-300";
+                knob.className = "w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300"; // Left aligned
+            }
+        }
+
+
+        function startTimerLoop() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimerUI, 1000);
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            if (!activeSession) return;
+
+            const now = Date.now();
+            let totalPaused = activeSession.interruptions.reduce((acc, i) => acc + (i.duration || 0), 0);
+
+            if (activeSession.status === 'paused') {
+                // UI shows the net time at the moment of pause
+            } else {
+                const rawElapsed = now - activeSession.startTime;
+                const netElapsed = rawElapsed - totalPaused;
+                dom.timerDisplay.textContent = formatTime(netElapsed);
+            }
+        }
+
+        function formatTime(ms) {
+            const totalSecs = Math.floor(ms / 1000);
+            const h = Math.floor(totalSecs / 3600);
+            const m = Math.floor((totalSecs % 3600) / 60);
+            const s = totalSecs % 60;
+
+            if (appSettings.showSeconds) {
+                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            } else {
+                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            }
+        }
+
+        window.pauseSession = () => {
+            dom.modalPause.classList.remove('hidden');
+        };
+
+        window.customPauseReason = () => {
+            const r = prompt("Describe el motivo de la interrupción:");
+            if (r) confirmPause(r);
+        };
+
+        window.confirmPause = (reason) => {
+            dom.modalPause.classList.add('hidden');
+            activeSession.status = 'paused';
+            activeSession.pauseStart = Date.now();
+            activeSession.currentPauseReason = reason;
+
+            saveLocal();
+            clearInterval(timerInterval);
+
+            // Show overlay
+            document.getElementById('pause-reason-display').textContent = "Motivo: " + reason;
+            dom.overlayPaused.classList.remove('hidden');
+        };
+
+        window.resumeSession = () => {
+            dom.modalPause.classList.add('hidden'); // In case canceled form modal
+            dom.overlayPaused.classList.add('hidden');
+
+            if (activeSession && activeSession.status === 'paused') {
+                const pauseEnd = Date.now();
+                const duration = pauseEnd - activeSession.pauseStart;
+
+                activeSession.interruptions.push({
+                    start: activeSession.pauseStart,
+                    end: pauseEnd,
+                    duration: duration,
+                    reason: activeSession.currentPauseReason
+                });
+
+                activeSession.status = 'running';
+                delete activeSession.pauseStart;
+                delete activeSession.currentPauseReason;
+                saveLocal();
+                startTimerLoop();
+            }
+        };
+
+        window.stopSession = async () => {
+            clearInterval(timerInterval);
+
+            const now = Date.now();
+            let totalPaused = activeSession.interruptions.reduce((acc, i) => acc + (i.duration || 0), 0);
+            const grossDuration = now - activeSession.startTime;
+            const netDuration = grossDuration - totalPaused;
+
+            let efficiency = 100;
+            if (grossDuration > 0) {
+                efficiency = Math.round((netDuration / grossDuration) * 100);
+            }
+            if (efficiency < 0) efficiency = 0;
+
+            const sessionData = {
+                ...activeSession,
+                endTime: now,
+                grossDuration,
+                netDuration,
+                efficiency,
+                createdAt: now
+            };
+
+            // Cleanup logic
+            localStorage.removeItem('study_session');
+            activeSession = null;
+
+            // UI Reset
+            dom.trackerActive.classList.add('hidden');
+            dom.trackerSetup.classList.remove('hidden');
+            dom.timerDisplay.textContent = appSettings.showSeconds ? "00:00:00" : "00:00";
+
+            // SAVE LOGIC
+            // Note: Since Firestore requires Auth, and we are editing sessions,
+            // implementing fully synced edit/delete is complex.
+            // For now, we will handle deletion/edition locally or strict Firestore if logged in.
+
+            if (currentUser) {
+                try {
+                    await addDoc(collection(db, 'study_sessions'), sessionData);
+                    alert(`¡Sesión guardada en Nube!\nEficiencia: ${efficiency}%`);
+                } catch (e) {
+                    console.error(e);
+                    alert("Error al guardar en la nube. Verifica tu conexión.");
+                }
+            } else {
+                // Guest Save (LocalStorage)
+                try {
+                    const guestHistory = JSON.parse(localStorage.getItem('guest_study_history') || '[]');
+                    guestHistory.push(sessionData);
+                    localStorage.setItem('guest_study_history', JSON.stringify(guestHistory));
+                    alert(`¡Sesión guardada (Local)!\nEficiencia: ${efficiency}%`);
+                    loadHistory();
+                } catch (e) {
+                    console.error(e);
+                    alert("Error guardando localmente.");
+                }
+            }
+        };
+
+        function saveLocal() {
+            localStorage.setItem('study_session', JSON.stringify(activeSession));
+        }
+
+        // --- APP NAVIGATION ---
+        window.switchTab = (tab) => {
+            ['tracker', 'dashboard', 'history'].forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const view = document.getElementById('view-' + t);
+                if (t === tab) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('tab-inactive');
+                    view.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                    view.classList.add('hidden');
+                }
+            });
+
+            if (tab === 'dashboard') updateCharts();
+        };
+
+        // --- DASHBOARD & DATA ---
+        let charts = {};
+
+        async function loadHistory() {
+            dom.historyList.innerHTML = '<tr><td colspan="5" class="p-8 text-center italic">Cargando...</td></tr>';
+
+            if (currentUser) {
+                const q = query(
+                    collection(db, 'study_sessions'),
+                    where('uid', '==', currentUser.uid)
+                );
+                // Real-time listener
+                onSnapshot(q, (snapshot) => {
+                    let docs = [];
+                    snapshot.forEach(doc => {
+                        let d = doc.data();
+                        d.id = doc.id; // Store Doc ID for delete/edit
+                        docs.push(d);
+                    });
+                    window.globalSessionCache = docs; // Cache for Detail View
+                    renderHistoryData(docs);
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    dom.historyList.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-500">Error cargando datos.</td></tr>';
+                });
+            } else {
+                const guestHistory = JSON.parse(localStorage.getItem('guest_study_history') || '[]');
+                // Add fake IDs for local management
+                guestHistory.forEach((item, index) => item.id = index);
+                window.globalSessionCache = guestHistory; // Cache for Detail View
+                renderHistoryData(guestHistory);
+            }
+        }
+
+        function renderHistoryData(dataArray) {
+            dataArray.sort((a, b) => b.createdAt - a.createdAt);
+
+            if (dataArray.length === 0) {
+                dom.historyList.innerHTML = '<tr><td colspan="5" class="p-8 text-center italic text-[#8a8175]">No hay sesiones registradas aún.</td></tr>';
+                window.chartData = null;
+                updateCharts();
+                return;
+            }
+
+            const list = dom.historyList;
+            list.innerHTML = '';
+
+            let totalNet = 0;
+            let totalGross = 0;
+            let subjectMap = {};
+            let interruptionMap = {};
+
+            dataArray.forEach(data => {
+                const dateStr = new Date(data.startTime).toLocaleDateString();
+                const minutes = Math.floor(data.netDuration / 60000);
+
+                // Unique keys for edit/delete
+                const itemId = data.id;
+
+                const row = `
+                    <tr onclick="openSessionDetails('${itemId}')" class="cursor-pointer hover:bg-[#fcfbf7] transition-all border-b border-[#e6e2d8] last:border-0 group">
+                        <td class="p-5 text-[#5c554b] group-hover:pl-6 transition-all duration-300">
+                             <div class="font-bold">${dateStr}</div>
+                             <div class="text-[10px] text-[#8a8175]">${new Date(data.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </td>
+                        <td class="p-5"><span class="bg-[#dcd3ff] text-[#5c554b] px-2 py-1 rounded text-xs font-bold uppercase">${data.subject}</span></td>
+                        <td class="p-5 font-mono text-[#8a8175]">${minutes} min</td>
+                        <td class="p-5 text-right ${data.efficiency < 50 ? 'text-red-400' : 'text-[#74db9c]'} font-bold text-lg">${data.efficiency}%</td>
+                    </tr>
+                `;
+                list.innerHTML += row;
+
+                // Aggregations
+                totalNet += data.netDuration;
+                totalGross += data.grossDuration;
+
+                if (!subjectMap[data.subject]) subjectMap[data.subject] = 0;
+                subjectMap[data.subject] += data.netDuration;
+
+                if (data.interruptions) {
+                    data.interruptions.forEach(int => {
+                        const r = int.reason || "Otros";
+                        if (!interruptionMap[r]) interruptionMap[r] = 0;
+                        interruptionMap[r]++;
+                    });
+                }
+            });
+
+            window.chartData = {
+                efficiency: totalGross > 0 ? Math.round((totalNet / totalGross) * 100) : 0,
+                subjects: subjectMap,
+                interruptions: interruptionMap
+            };
+
+            updateCharts();
+        }
+
+        // --- DETAIL & FEATURES ---
+
+        let currentDetailId = null;
+        let timelineChartInstance = null;
+
+        window.openSessionDetails = async (id) => {
+            // Find Data
+            let session = null;
+            if (currentUser) {
+                session = window.globalSessionCache ? window.globalSessionCache.find(s => s.id === id) : null;
+            } else {
+                const history = JSON.parse(localStorage.getItem('guest_study_history') || '[]');
+                session = history.find(s => s.id == id);
+            }
+
+            if (!session) return;
+
+            currentDetailId = id;
+
+            // Populate Stats
+            dom.detailDate.textContent = new Date(session.startTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            dom.detailNet.textContent = formatTime(session.netDuration || 0);
+            dom.detailGross.textContent = formatTime(session.grossDuration || 0);
+
+            // Pauses
+            const pauseList = session.interruptions || [];
+            dom.detailPauses.textContent = pauseList.length;
+            const totalPauseMs = pauseList.reduce((acc, p) => acc + (p.duration || 0), 0);
+            const totalPauseMins = Math.floor(totalPauseMs / 60000);
+            dom.detailPauseTime.textContent = totalPauseMins > 0 ? `(${totalPauseMins}m)` : '';
+
+            dom.detailEfficiency.textContent = (session.efficiency || 0) + '%';
+
+            // Populate Dropdowns & Ensure Value exists
+            let currentSubList = [...subjects];
+            if (!currentSubList.includes(session.subject)) currentSubList.push(session.subject);
+            dom.detailSubject.innerHTML = currentSubList.map(s => `<option value="${s}">${s}</option>`).join('');
+            dom.detailSubject.value = session.subject;
+
+            let currentMetList = [...methods];
+            if (!currentMetList.includes(session.method)) currentMetList.push(session.method);
+            dom.detailMethod.innerHTML = currentMetList.map(m => `<option value="${m}">${m}</option>`).join('');
+            dom.detailMethod.value = session.method;
+
+            // Reset UI state (FORCE DISABLED)
+            disableEditSession();
+
+            // Open Modal
+            dom.modalDetail.classList.remove('hidden');
+
+            // Render Chart
+            setTimeout(() => renderTimelineChart(session), 50);
+        };
+
+        window.closeDetail = () => dom.modalDetail.classList.add('hidden');
+
+        function disableEditSession() {
+            dom.detailSubject.disabled = true;
+            dom.detailMethod.disabled = true;
+            // Styles to ensure it looks disabled
+            dom.detailSubject.classList.add('opacity-70', 'bg-gray-50');
+            dom.detailMethod.classList.add('opacity-70', 'bg-gray-50');
+
+            document.getElementById('btn-edit-session').classList.remove('hidden');
+            document.getElementById('btn-save-session').classList.add('hidden');
+        }
+
+        window.toggleEditSession = () => {
+            dom.detailSubject.disabled = false;
+            dom.detailMethod.disabled = false;
+            dom.detailSubject.classList.remove('opacity-70', 'bg-gray-50');
+            dom.detailMethod.classList.remove('opacity-70', 'bg-gray-50');
+
+            document.getElementById('btn-edit-session').classList.add('hidden');
+            document.getElementById('btn-save-session').classList.remove('hidden');
+        };
+
+        window.saveSessionChanges = async () => {
+            const newSub = dom.detailSubject.value;
+            const newMet = dom.detailMethod.value;
+
+            if (currentUser) {
+                try {
+                    const docRef = doc(db, "study_sessions", currentDetailId);
+                    await updateDoc(docRef, {
+                        subject: newSub,
+                        method: newMet
+                    });
+                    disableEditSession();
+                    alert("¡Guardado en Nube!");
+                } catch (e) {
+                    console.error(e);
+                    alert("Error al actualizar: " + e.message);
+                }
+            } else {
+                const history = JSON.parse(localStorage.getItem('guest_study_history') || '[]');
+                const idx = history.findIndex(s => s.id == currentDetailId);
+                if (idx > -1) {
+                    history[idx].subject = newSub;
+                    history[idx].method = newMet;
+                    localStorage.setItem('guest_study_history', JSON.stringify(history));
+                    loadHistory(); // Reload table
+                    disableEditSession();
+                    alert("Guardado.",);
+                }
+            }
+        };
+
+        window.promptDeleteSession = async () => {
+            if (confirm("¿Eliminar esta sesión permanentemente?")) {
+                if (currentUser) {
+                    try {
+                        await deleteDoc(doc(db, "study_sessions", currentDetailId));
+                        dom.modalDetail.classList.add('hidden');
+                        alert("Sesión eliminada de la nube.");
+                    } catch (e) {
+                        console.error(e);
+                        alert("Error al eliminar: " + e.message);
+                    }
+                } else {
+                    let history = JSON.parse(localStorage.getItem('guest_study_history') || '[]');
+                    history = history.filter(s => s.id != currentDetailId);
+                    localStorage.setItem('guest_study_history', JSON.stringify(history));
+                    dom.modalDetail.classList.add('hidden');
+                    loadHistory();
+                    alert("Sesión eliminada.");
+                }
+            }
+        };
+
+        // --- TIMELINE CHART (FIXED) ---
+        function renderTimelineChart(session) {
+            const ctx = document.getElementById('chart-timeline').getContext('2d');
+            if (timelineChartInstance) timelineChartInstance.destroy();
+
+            const start = session.startTime;
+            const end = session.endTime;
+            const pauses = session.interruptions || [];
+            pauses.sort((a, b) => a.start - b.start);
+
+            // Create Segment Objects
+            let segments = [];
+            let cursor = start;
+
+            pauses.forEach(p => {
+                // Study segment before pause
+                if ((p.start - cursor) > 1000) {
+                    segments.push({ type: 'Study', start: cursor, end: p.start, reason: 'Estudio' });
+                }
+                // Pause segment
+                segments.push({ type: 'Pause', start: p.start, end: p.end, reason: p.reason || 'Pausa' });
+                cursor = p.end;
+            });
+
+            // Final study segment
+            if ((end - cursor) > 1000) {
+                segments.push({ type: 'Study', start: cursor, end: end, reason: 'Estudio' });
+            }
+
+            // Map to Chart.js data
+            const dataPoints = segments.map(s => ({
+                x: [s.start, s.end],
+                y: 'Sesión',
+                _type: s.type,
+                _reason: s.reason,
+                _duration: s.end - s.start
+            }));
+
+            const bgColors = segments.map(s => s.type === 'Study' ? '#a5f5c3' : '#f5a5c0');
+
+            timelineChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sesión'],
+                    datasets: [{
+                        label: 'Línea de Tiempo',
+                        data: dataPoints,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        barPercentage: 0.6,
+                        categoryPercentage: 1.0,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: start,
+                            max: end,
+                            grid: { display: false },
+                            ticks: {
+                                callback: val => new Date(val).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                maxTicksLimit: 5
+                            }
+                        },
+                        y: { display: false }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: () => '',
+                                label: (ctx) => {
+                                    const raw = ctx.raw;
+                                    if (!raw) return '';
+                                    const mins = Math.max(1, Math.round(raw._duration / 60000));
+                                    return `${raw._reason}: ${mins} min`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- MANUAL ENTRY ---
+        window.openManualEntry = () => {
+            const now = new Date();
+
+            // Populate dropdowns
+            dom.manSubject.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            dom.manMethod.innerHTML = methods.map(m => `<option value="${m}">${m}</option>`).join('');
+
+            // Defaults
+            dom.manDate.valueAsDate = now;
+            dom.manStart.value = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            // Default end 1 hour later
+            const later = new Date(now.getTime() + 3600000);
+            dom.manEnd.value = later.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            dom.modalManual.classList.remove('hidden');
+        };
+
+        window.saveManualEntry = () => {
+            const dateVal = dom.manDate.value;
+            const startVal = dom.manStart.value;
+            const endVal = dom.manEnd.value;
+            const sub = dom.manSubject.value;
+            const met = dom.manMethod.value;
+            const pauseMins = parseInt(document.getElementById('man-pause').value) || 0;
+
+            if (!dateVal || !startVal || !endVal) return alert("Completa fecha y horas");
+
+            // Construct Dates
+            // Note: input type=time gives "HH:mm"
+            const startTs = new Date(`${dateVal}T${startVal}`).getTime();
+            const endTs = new Date(`${dateVal}T${endVal}`).getTime();
+
+            if (endTs <= startTs) return alert("La hora de fin debe ser posterior al inicio");
+
+            const gross = endTs - startTs;
+            const pauseMs = pauseMins * 60000;
+            const net = gross - pauseMs;
+
+            if (net < 0) return alert("Las pausas exceden la duración total");
+
+            const eff = gross > 0 ? Math.round((net / gross) * 100) : 0;
+
+            const newSession = {
+                id: Date.now(), // Fake ID
+                uid: currentUser ? currentUser.uid : 'guest',
+                subject: sub,
+                method: met,
+                startTime: startTs,
+                endTime: endTs,
+                grossDuration: gross,
+                netDuration: net,
+                efficiency: eff,
+                interruptions: pauseMs > 0 ? [{ start: startTs + (net / 2), end: startTs + (net / 2) + pauseMs, duration: pauseMs, reason: 'Manual' }] : [],
+                createdAt: Date.now()
+            };
+
+            if (currentUser) {
+                alert("Guardado manual en Nube no habilitado aún.");
+            } else {
+                const history = JSON.parse(localStorage.getItem('guest_study_history') || '[]');
+                history.push(newSession);
+                localStorage.setItem('guest_study_history', JSON.stringify(history));
+                dom.modalManual.classList.add('hidden');
+                loadHistory();
+                alert("Sesión agregada.");
+            }
+        };
+
+
+        function updateCharts() {
+            if (!window.chartData) return;
+
+            // Efficiency Doughnut
+            const ctxEff = document.getElementById('chart-efficiency').getContext('2d');
+            if (charts.eff) charts.eff.destroy();
+            document.getElementById('efficiency-number').textContent = window.chartData.efficiency + '%';
+
+            charts.eff = new Chart(ctxEff, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Productivo', 'Interrupciones'],
+                    datasets: [{
+                        data: [window.chartData.efficiency, 100 - window.chartData.efficiency],
+                        backgroundColor: ['#a5f5c3', '#f5a5c0'], // Green / Red (Pastel)
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '80%', responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            // Subjects Bar Chart
+            const ctxSub = document.getElementById('chart-subjects').getContext('2d');
+            if (charts.sub) charts.sub.destroy();
+            const subs = Object.keys(window.chartData.subjects);
+            const mins = Object.values(window.chartData.subjects).map(m => Math.floor(m / 60000));
+
+            charts.sub = new Chart(ctxSub, {
+                type: 'bar',
+                data: {
+                    labels: subs,
+                    datasets: [{
+                        label: 'Minutos',
+                        data: mins,
+                        backgroundColor: '#a5ccf5',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#e6e2d8' }, ticks: { color: '#8a8175' } },
+                        x: { grid: { display: false }, ticks: { color: '#8a8175' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Interruptions Bar Chart (NEW)
+            const ctxInt = document.getElementById('chart-interruptions').getContext('2d');
+            if (charts.int) charts.int.destroy();
+
+            // Sort interruptions by frequency
+            const intEntries = Object.entries(window.chartData.interruptions).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            charts.int = new Chart(ctxInt, {
+                type: 'bar',
+                data: {
+                    labels: intEntries.map(e => e[0]),
+                    datasets: [{
+                        label: 'Cantidad',
+                        data: intEntries.map(e => e[1]),
+                        backgroundColor: '#ffdfba',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bars
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#e6e2d8' }, ticks: { stepSize: 1, color: '#8a8175' } },
+                        y: { grid: { display: false }, ticks: { color: '#5c554b', font: { weight: 'bold' } } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
 
     </script>
 </body>
+
 </html>
