@@ -3,477 +3,659 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Planner Pro - Minimalist</title>
-    
-    <!-- Tailwind CSS -->
+    <title>10 Minute Planner - Study Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        dark: {
-                            950: '#050505',
-                            900: '#0a0a0a',
-                            800: '#171717',
-                            700: '#262626',
-                            600: '#404040'
-                        },
-                        accent: '#6366f1'
-                    }
-                }
-            }
-        }
-    </script>
-
     <style>
-        body {
-            background-color: #0a0a0a;
-            color: #ededed;
-            margin: 0;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #404040; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
-        
-        input:-webkit-autofill {
-            -webkit-box-shadow: 0 0 0 30px #171717 inset !important;
-            -webkit-text-fill-color: white !important;
+        :root {
+            --bg-color: #FDFCF9;
+            --text-color: #5D5A50;
+            --border-color: #E2DFD6;
+            --highlight: #F5F2E7;
         }
 
-        .time-block {
-            transition: all 0.2s ease;
+        body {
+            background-color: #F0EDE4;
+            color: var(--text-color);
+            font-family: 'Quicksand', sans-serif;
+            padding: 20px;
         }
-        .time-block:hover {
-            filter: brightness(1.2);
-            transform: scale(1.02);
+
+        .planner-page {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #FFFFFF;
+            padding: 40px;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            min-height: 1100px;
+            position: relative;
+        }
+
+        .header-line {
+            border-bottom: 2px solid var(--text-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+        }
+
+        .selector-box {
+            display: inline-flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .selectable {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .selectable.active {
+            background-color: var(--text-color);
+            color: white;
+        }
+
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center; gap: 8px;
+        }
+
+        input, textarea {
+            border: none;
+            background: transparent;
+            width: 100%;
+            outline: none;
+            color: var(--text-color);
+            font-family: inherit;
+        }
+
+        .time-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .time-grid th, .time-grid td {
+            border: 1px solid var(--border-color);
+            padding: 4px;
+            height: 28px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .time-grid th {
+            font-weight: 500;
+            background-color: var(--highlight);
+        }
+
+        .grid-cell {
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .grid-cell:hover { background-color: #fcfcfc; }
+
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px #ddd;
+        }
+        .color-dot.active { box-shadow: 0 0 0 2px var(--text-color); }
+
+        #status-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 12px;
+            background: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        .task-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2px;
+        }
+
+        .task-check {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            border: 1px solid var(--text-color);
+            cursor: pointer;
+            appearance: none;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .task-check:checked {
+            background-color: var(--text-color);
+            position: relative;
+        }
+        .task-check:checked::after {
+            content: '✓';
+            color: white;
+            position: absolute;
+            top: -1.5px;
+            left: 3.5px;
+            font-size: 12px;
+        }
+
+        .task-color-picker {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            flex-shrink: 0;
+            background-color: #fff;
+        }
+
+        .category-input {
+            width: 80px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #999;
+            flex-shrink: 0;
+        }
+
+        .task-input {
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .calendar-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            border-radius: 50%;
+            background: #F5F2E7;
+            transition: background 0.2s;
+        }
+        .calendar-wrapper:hover {
+            background: #E2DFD6;
+        }
+        .calendar-wrapper input[type="date"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
 </head>
-<body class="bg-dark-900">
-    <div id="root"></div>
+<body>
 
-    <!-- Carga de módulos vía ESM para máxima compatibilidad -->
+    <!-- Pantalla de Login -->
+    <div id="auth-screen" class="fixed inset-0 bg-[#F0EDE4] flex items-center justify-center z-50">
+        <div class="auth-card text-center">
+            <h1 class="text-2xl font-bold mb-6 italic">10 Minute Planner</h1>
+            <p class="text-sm opacity-60 mb-8">Organiza tu día bloque a bloque.</p>
+            <input type="email" id="email" placeholder="Email" class="mb-4 p-3 border border-gray-200 rounded-lg bg-white">
+            <input type="password" id="password" placeholder="Contraseña" class="mb-6 p-3 border border-gray-200 rounded-lg bg-white">
+            <div class="flex flex-col gap-3">
+                <button id="login-btn" class="bg-[#5D5A50] text-white py-3 rounded-lg font-medium">Entrar</button>
+                <button id="guest-btn" class="border border-[#5D5A50] text-[#5D5A50] py-3 rounded-lg font-medium hover:bg-[#F5F2E7]">Entrar como Invitado</button>
+                <button id="register-btn" class="text-sm underline opacity-60">Crear una cuenta nueva</button>
+            </div>
+            <p id="auth-error" class="text-red-500 text-[10px] mt-4 hidden leading-tight"></p>
+        </div>
+    </div>
+
+    <!-- Aplicación Principal -->
+    <div id="app" class="hidden">
+        <div class="max-w-[900px] mx-auto mb-4 flex justify-between items-center px-4">
+            <div></div>
+            <div class="flex items-center gap-4">
+                <span id="user-display" class="text-xs italic"></span>
+                <button id="logout-btn" class="text-xs underline">Salir</button>
+            </div>
+        </div>
+
+        <div class="planner-page">
+            <div class="flex justify-between items-end header-line">
+                <div class="w-2/3">
+                    <div class="section-title mb-1">Goal(s)</div>
+                    <textarea id="goals" rows="2" class="text-lg italic font-medium" placeholder="Escribe tus objetivos principales de hoy..."></textarea>
+                </div>
+                <div class="text-right">
+                    <h1 class="text-2xl font-light tracking-tighter italic">10 Minute <span class="font-bold">Planner</span></h1>
+                    <div class="mt-2">
+                        <div class="text-[10px] font-bold uppercase">Total Time:</div>
+                        <div id="total-time" class="text-2xl font-light">00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-8 mb-8 text-sm items-center border-b border-[#E2DFD6] pb-4">
+                <div>
+                    <span class="font-bold mr-2 uppercase text-[10px]">Month:</span>
+                    <div class="selector-box" id="month-selector"></div>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-bold mr-2 uppercase text-[10px]">Day:</span>
+                    <input type="text" id="day-number" placeholder="--" class="w-10 border-b border-black text-center font-bold text-lg">
+                </div>
+                <div class="flex items-center gap-4 ml-auto md:ml-0">
+                    <div class="selector-box" id="weekday-selector">
+                        <span class="selectable pointer-events-none" data-day="mon">mon</span>
+                        <span class="selectable pointer-events-none" data-day="tue">tue</span>
+                        <span class="selectable pointer-events-none" data-day="wed">wed</span>
+                        <span class="selectable pointer-events-none" data-day="thu">thu</span>
+                        <span class="selectable pointer-events-none" data-day="fri">fri</span>
+                        <span class="selectable pointer-events-none" data-day="sat">sat</span>
+                        <span class="selectable pointer-events-none" data-day="sun">sun</span>
+                    </div>
+                    <div class="calendar-wrapper" title="Seleccionar fecha">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        <input type="date" id="calendar-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="pt-0">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="section-title">Timeline (10 min blocks)</div>
+                        <div class="flex gap-2" id="palette">
+                            <div class="color-dot active bg-[#FADADD]" data-color="#FADADD"></div>
+                            <div class="color-dot bg-[#D1EADE]" data-color="#D1EADE"></div>
+                            <div class="color-dot bg-[#D1E5F0]" data-color="#D1E5F0"></div>
+                            <div class="color-dot bg-[#E8DFF5]" data-color="#E8DFF5"></div>
+                            <div class="color-dot bg-white" data-color="white"></div>
+                        </div>
+                    </div>
+                    
+                    <table class="time-grid">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">Hr</th>
+                                <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th><th>60</th>
+                            </tr>
+                        </thead>
+                        <tbody id="grid-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-col gap-8 pt-0">
+                    <section>
+                        <div class="section-title">Tasks</div>
+                        <div id="tasks-list"></div>
+                        <button id="add-task-btn" class="text-[10px] mt-2 opacity-50 uppercase tracking-widest">+ Add task line</button>
+                    </section>
+
+                    <div class="grid grid-cols-2 gap-4 mt-auto">
+                        <section>
+                            <div class="section-title text-[12px]">Notes:</div>
+                            <textarea id="notes" rows="10" class="p-2 border border-[#E2DFD6] rounded bg-[#FDFCF9] text-xs"></textarea>
+                        </section>
+                        <section>
+                            <div class="section-title text-[12px]">To do:</div>
+                            <textarea id="todo" rows="10" class="p-2 border border-[#E2DFD6] rounded bg-[#FDFCF9] text-xs"></textarea>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-indicator">Guardado automáticamente</div>
+
     <script type="module">
-        import React, { useState, useEffect, useCallback, useMemo } from 'https://esm.sh/react@19.0.0';
-        import { createRoot } from 'https://esm.sh/react-dom@19.0.0/client';
-        import htm from 'https://esm.sh/htm';
-        
-        // Importación de Firebase desde el CDN oficial
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, doc, onSnapshot, setDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const html = htm.bind(React.createElement);
-
-        // --- Configuración de Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyDDTOTQDYxbpRT547Cf0-hO014pl3T3JUo",
             authDomain: "mi-planner-88ef4.firebaseapp.com",
             projectId: "mi-planner-88ef4",
             storageBucket: "mi-planner-88ef4.firebasestorage.app",
             messagingSenderId: "252241778516",
-            appId: "1:252241778516:web:e87349948d01f34ca59ac1",
-            measurementId: "G-JGWJFMWD9M"
+            appId: "1:252241778516:web:e87349948d01f34ca59ac1"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+        const appId = "planner-study-v2";
 
-        // --- Constantes ---
-        const COLORS = [
-            { name: 'Red', hex: '#FFADAD' },
-            { name: 'Orange', hex: '#FFD6A5' },
-            { name: 'Yellow', hex: '#FDFFB6' },
-            { name: 'Green', hex: '#CAFFBF' },
-            { name: 'Blue', hex: '#9BF6FF' },
-            { name: 'Indigo', hex: '#A0C4FF' },
-            { name: 'Purple', hex: '#BDB2FF' },
-            { name: 'Pink', hex: '#FFC6FF' },
-        ];
+        let currentUser = null;
+        let selectedColor = "#FADADD";
+        let saveTimeout = null;
 
-        const HOURS = Array.from({ length: 18 }, (_, i) => {
-            const h = i + 6;
-            return h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
-        });
+        function initApp(user) {
+            currentUser = user;
+            const authScreen = document.getElementById('auth-screen');
+            const appMain = document.getElementById('app');
+            const userDisplay = document.getElementById('user-display');
 
-        const INTERVALS = [0, 10, 20, 30, 40, 50];
-        const DAYS_OF_WEEK = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+            if (user) {
+                authScreen.classList.add('hidden');
+                appMain.classList.remove('hidden');
+                userDisplay.textContent = user.isLocal ? 'Modo Invitado (Local)' : (user.isAnonymous ? 'Modo Invitado' : user.email);
+                
+                setupUI();
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('calendar-input').value = today;
+                syncUIFromDate(today);
+                loadDate(today);
+            } else {
+                authScreen.classList.remove('hidden');
+                appMain.classList.add('hidden');
+            }
+        }
 
-        // --- Componentes ---
-
-        const AuthForm = () => {
-            const [isLogin, setIsLogin] = useState(true);
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const [loading, setLoading] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError('');
-                setLoading(true);
-                try {
-                    if (isLogin) {
-                        await signInWithEmailAndPassword(auth, email, password);
-                    } else {
-                        await createUserWithEmailAndPassword(auth, email, password);
-                    }
-                } catch (err) {
-                    setError(err.message.replace('Firebase: ', ''));
-                } finally {
-                    setLoading(false);
+        function setupUI() {
+            const monthSel = document.getElementById('month-selector');
+            if (monthSel.innerHTML === "") {
+                for(let i=1; i<=12; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'selectable month-item';
+                    s.innerText = i;
+                    s.onclick = () => {
+                        const currentVal = document.getElementById('calendar-input').value;
+                        const parts = currentVal.split('-');
+                        const newDate = `${parts[0]}-${i.toString().padStart(2,'0')}-${parts[2]}`;
+                        updateDateFromUI(newDate);
+                    };
+                    monthSel.appendChild(s);
                 }
-            };
 
-            return html`
-                <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-dark-950">
-                    <div className="w-full max-w-md bg-dark-900 border border-dark-800 rounded-3xl p-10 shadow-2xl animate-fadeIn">
-                        <div className="mb-10 text-center">
-                            <h2 className="text-4xl font-bold mb-3 text-white tracking-tight italic">DAILY PLANNER</h2>
-                            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest">
-                                ${isLogin ? 'Welcome back' : 'Join the elite'}
-                            </p>
-                        </div>
-                        
-                        <form onSubmit=${handleSubmit} className="space-y-6">
-                            <input 
-                                type="email" 
-                                value=${email} 
-                                onChange=${(e) => setEmail(e.target.value)}
-                                className="w-full bg-dark-800 border border-dark-700 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent transition-all placeholder-neutral-600"
-                                placeholder="Email"
-                                required
-                            />
-                            <input 
-                                type="password" 
-                                value=${password} 
-                                onChange=${(e) => setPassword(e.target.value)}
-                                className="w-full bg-dark-800 border border-dark-700 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-accent transition-all placeholder-neutral-600"
-                                placeholder="Password"
-                                required
-                            />
-                            ${error && html`<p className="text-red-400 text-xs text-center">${error}</p>`}
-                            <button 
-                                type="submit"
-                                disabled=${loading}
-                                className="w-full bg-accent hover:bg-indigo-500 text-white font-bold py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                ${loading ? '...' : (isLogin ? 'Sign In' : 'Sign Up')}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-8 text-center">
-                            <button 
-                                onClick=${() => setIsLogin(!isLogin)}
-                                className="text-xs text-neutral-500 hover:text-white transition-colors font-bold uppercase tracking-widest"
-                            >
-                                ${isLogin ? "Create an account" : "I have an account"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
+                const gridBody = document.getElementById('grid-body');
+                gridBody.innerHTML = "";
+                for(let h=5; h<=24; h++) {
+                    const tr = document.createElement('tr');
+                    const hrCell = document.createElement('td');
+                    hrCell.className = 'font-bold bg-[#F5F2E7]';
+                    hrCell.innerText = h.toString().padStart(2, '0');
+                    tr.appendChild(hrCell);
 
-        const Planner = ({ user }) => {
-            const [selectedColor, setSelectedColor] = useState(COLORS[0].hex);
-            const [loading, setLoading] = useState(true);
-            const [state, setState] = useState({
-                month: new Date().getMonth() + 1,
-                day: new Date().getDate(),
-                dayOfWeek: DAYS_OF_WEEK[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1],
-                goal: '',
-                tasks: Array.from({ length: 12 }, (_, i) => ({
-                    id: `task-${i}`,
-                    completed: false,
-                    description: '',
-                    details: '',
-                    colorId: null,
-                })),
-                timeGrid: {},
-                notes: '',
-                todo: ['', '', '', ''],
+                    for(let m=1; m<=6; m++) {
+                        const td = document.createElement('td');
+                        td.className = 'grid-cell';
+                        td.dataset.id = `h${h}m${m*10}`;
+                        td.onclick = function() {
+                            this.style.backgroundColor = (this.style.backgroundColor === selectedColor) ? '' : selectedColor;
+                            updateTotalTime();
+                            triggerSave();
+                        };
+                        tr.appendChild(td);
+                    }
+                    gridBody.appendChild(tr);
+                }
+
+                document.querySelectorAll('.color-dot').forEach(dot => {
+                    dot.onclick = () => {
+                        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                        dot.classList.add('active');
+                        selectedColor = dot.dataset.color;
+                    };
+                });
+
+                document.querySelectorAll('input, textarea').forEach(el => {
+                    if(!el.classList.contains('task-input') && !el.classList.contains('category-input') && el.id !== 'day-number' && el.id !== 'calendar-input') {
+                        el.oninput = () => triggerSave();
+                    }
+                });
+            }
+        }
+
+        // --- FUNCIÓN DE SINCRONIZACIÓN MAESTRA ---
+        function updateDateFromUI(newDateStr) {
+            // Validar fecha
+            const testDate = new Date(newDateStr);
+            if (isNaN(testDate.getTime())) return;
+
+            const finalDate = testDate.toISOString().split('T')[0];
+            document.getElementById('calendar-input').value = finalDate;
+            syncUIFromDate(finalDate);
+            loadDate(finalDate);
+        }
+
+        function syncUIFromDate(dateStr) {
+            const [y, m, d] = dateStr.split('-');
+            const dateObj = new Date(y, m - 1, d);
+            
+            // Actualizar número de día
+            document.getElementById('day-number').value = parseInt(d);
+
+            // Actualizar Mes
+            document.querySelectorAll('.month-item').forEach(item => {
+                if(item.innerText == parseInt(m)) item.classList.add('active');
+                else item.classList.remove('active');
             });
 
-            useEffect(() => {
-                const docRef = doc(db, 'planners', user.uid);
-                const unsubscribe = onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setState(prev => ({ ...prev, ...docSnap.data() }));
-                    }
-                    setLoading(false);
-                });
-                return () => unsubscribe();
-            }, [user.uid]);
+            // Actualizar Día de la semana
+            const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const weekday = daysMap[dateObj.getDay()];
+            document.querySelectorAll('#weekday-selector .selectable').forEach(s => {
+                if(s.dataset.day === weekday) s.classList.add('active');
+                else s.classList.remove('active');
+            });
+        }
 
-            const saveToFirebase = useCallback(async (newState) => {
-                try {
-                    await setDoc(doc(db, 'planners', user.uid), {
-                        ...newState,
-                        lastUpdated: Timestamp.now()
-                    });
-                } catch (e) {
-                    console.error("Error saving state", e);
-                }
-            }, [user.uid]);
+        const addTaskLine = (initialData = null) => {
+            const div = document.createElement('div');
+            div.className = 'task-row';
+            const checked = initialData?.done ? 'checked' : '';
+            const color = initialData?.color || '#ffffff';
+            const category = initialData?.category || '';
+            const text = initialData?.text || '';
 
-            const updateState = (updates) => {
-                const newState = { ...state, ...updates };
-                setState(newState);
-                saveToFirebase(newState);
-            };
-
-            const handleTaskChange = (id, updates) => {
-                const newTasks = state.tasks.map(t => (t.id === id ? { ...t, ...updates } : t));
-                updateState({ tasks: newTasks });
-            };
-
-            const toggleTimeBlock = (hour, interval) => {
-                const key = `${hour}:${interval}`;
-                const newGrid = { ...state.timeGrid };
-                if (selectedColor === null) {
-                    delete newGrid[key];
-                } else {
-                    newGrid[key] = selectedColor;
-                }
-                updateState({ timeGrid: newGrid });
-            };
-
-            const colorSummary = useMemo(() => {
-                const summary = {};
-                Object.values(state.timeGrid).forEach((hex) => {
-                    summary[hex] = (summary[hex] || 0) + 10;
-                });
-                return summary;
-            }, [state.timeGrid]);
-
-            const totalMinutes = useMemo(() => {
-                return Object.keys(state.timeGrid).length * 10;
-            }, [state.timeGrid]);
-
-            if (loading) return html`
-                <div className="min-h-screen flex items-center justify-center bg-dark-950">
-                    <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-                </div>
+            div.innerHTML = `
+                <input type="checkbox" class="task-check" ${checked}>
+                <div class="task-color-picker" style="background-color: ${color}"></div>
+                <input type="text" class="category-input" placeholder="CAT" value="${category}">
+                <input type="text" class="task-input" placeholder="Nueva tarea..." value="${text}">
             `;
 
-            return html`
-                <div className="min-h-screen p-4 md:p-8 flex justify-center bg-dark-950">
-                    <div className="w-full max-w-[1000px] bg-dark-900 shadow-2xl border border-dark-800 p-6 md:p-10 flex flex-col gap-8 rounded-3xl animate-fadeIn">
-                        
-                        <div className="flex justify-between items-start">
-                            <div className="flex flex-col gap-6">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex flex-col">
-                                        <span className="text-5xl font-black text-white italic leading-none">
-                                            ${state.month.toString().padStart(2, '0')}.${state.day.toString().padStart(2, '0')}
-                                        </span>
-                                        <span className="text-[10px] font-black text-accent tracking-[0.4em] uppercase">${state.dayOfWeek}</span>
-                                    </div>
-                                    <div className="h-12 w-[1px] bg-dark-700 mx-2" />
-                                    <div className="flex flex-wrap gap-2">
-                                        ${COLORS.map((c) => html`
-                                            <button
-                                                key=${c.hex}
-                                                onClick=${() => setSelectedColor(c.hex)}
-                                                className=${`w-7 h-7 rounded-full border-2 transition-all ${selectedColor === c.hex ? 'border-white scale-110' : 'border-transparent'}`}
-                                                style=${{ backgroundColor: c.hex }}
-                                            />
-                                        `)}
-                                        <button
-                                            onClick=${() => setSelectedColor(null)}
-                                            className=${`w-7 h-7 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] transition-all ${selectedColor === null ? 'border-white scale-110' : 'border-dark-700 text-neutral-600'}`}
-                                        >✕</button>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500 overflow-x-auto pb-2">
-                                    ${COLORS.map(c => html`
-                                        <div key=${c.hex} className="flex items-center gap-2 whitespace-nowrap">
-                                            <div className="w-2 h-2 rounded-full" style=${{ backgroundColor: c.hex }} />
-                                            <span>${colorSummary[c.hex] || 0}m</span>
-                                        </div>
-                                    `)}
-                                    <div className="border-l border-dark-700 pl-4 ml-2 text-white">Total: ${totalMinutes}m</div>
-                                </div>
-                            </div>
-                            <button 
-                                onClick=${() => signOut(auth)}
-                                className="text-[10px] uppercase tracking-widest font-bold text-neutral-600 hover:text-white transition-colors border-b border-transparent hover:border-white"
-                            >Logout</button>
-                        </div>
+            div.querySelector('.task-color-picker').onclick = function() {
+                this.style.backgroundColor = selectedColor;
+                triggerSave();
+            };
 
-                        <div className="border border-dark-700 bg-dark-800/50 p-4 h-24 relative rounded-xl">
-                            <label className="absolute -top-3 left-3 bg-dark-900 px-2 text-[10px] font-bold text-accent uppercase tracking-widest">Main Goal</label>
-                            <textarea 
-                                className="w-full h-full resize-none text-sm font-medium bg-transparent focus:outline-none text-white placeholder-neutral-600"
-                                value=${state.goal}
-                                onChange=${(e) => updateState({ goal: e.target.value })}
-                                placeholder="Focus on what matters..."
-                            />
-                        </div>
+            div.querySelectorAll('input').forEach(input => {
+                input.oninput = () => triggerSave();
+                input.onchange = () => triggerSave();
+            });
 
-                        <div className="flex flex-col lg:flex-row gap-10">
-                            <div className="flex-[3] space-y-6">
-                                <h3 className="text-[10px] font-black border-b border-dark-800 pb-2 uppercase tracking-[0.3em] text-neutral-600">Daily Schedule</h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    ${state.tasks.map((task) => html`
-                                        <div key=${task.id} className="flex items-start gap-4 group">
-                                            <button
-                                                onClick=${() => handleTaskChange(task.id, { colorId: selectedColor })}
-                                                className="w-5 h-5 mt-1 rounded-md border border-dark-700 flex-shrink-0 transition-all hover:scale-110 shadow-lg"
-                                                style=${{ backgroundColor: task.colorId || 'transparent' }}
-                                            />
-                                            <div className="flex-1 flex flex-col border-b border-dark-800 pb-2">
-                                                <div className="flex items-center gap-3">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked=${task.completed}
-                                                        onChange=${(e) => handleTaskChange(task.id, { completed: e.target.checked })}
-                                                        className="w-4 h-4 accent-accent bg-dark-800 border-dark-700 rounded"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value=${task.description}
-                                                        onChange=${(e) => handleTaskChange(task.id, { description: e.target.value })}
-                                                        className=${`flex-1 text-sm bg-transparent focus:outline-none font-medium transition-all ${task.completed ? 'line-through text-neutral-600' : 'text-neutral-200'}`}
-                                                        placeholder="Task..."
-                                                    />
-                                                </div>
-                                                <input
-                                                    type="text"
-                                                    value=${task.details}
-                                                    onChange=${(e) => handleTaskChange(task.id, { details: e.target.value })}
-                                                    className="text-[10px] text-neutral-500 bg-transparent focus:outline-none pl-7 mt-1"
-                                                    placeholder="Details..."
-                                                />
-                                            </div>
-                                        </div>
-                                    `)}
-                                </div>
-                            </div>
+            document.getElementById('tasks-list').appendChild(div);
+        }
 
-                            <div className="flex-[2] border-l border-dark-800 pl-0 lg:pl-10 min-w-[200px]">
-                                <div className="flex text-[9px] font-black text-neutral-600 mb-4 uppercase tracking-widest">
-                                    <div className="w-12" />
-                                    ${INTERVALS.map((int) => html`<div key=${int} className="flex-1 text-center">${int}m</div>`)}
-                                </div>
-                                <div className="space-y-1.5">
-                                    ${HOURS.map((hour) => html`
-                                        <div key=${hour} className="flex items-center gap-3 group">
-                                            <span className="w-12 text-[10px] font-bold text-neutral-500 text-right">${hour}</span>
-                                            <div className="flex-1 flex gap-1 h-5">
-                                                ${INTERVALS.map((int) => {
-                                                    const key = `${hour}:${int}`;
-                                                    const color = state.timeGrid[key];
-                                                    return html`
-                                                        <button
-                                                            key=${int}
-                                                            onClick=${() => toggleTimeBlock(hour, int)}
-                                                            className=${`time-block flex-1 rounded-sm transition-all ${!color ? 'bg-dark-800 border border-dark-700/50' : 'shadow-inner'}`}
-                                                            style=${{ backgroundColor: color }}
-                                                        />
-                                                    `;
-                                                })}
-                                            </div>
-                                        </div>
-                                    `)}
-                                </div>
-                            </div>
-                        </div>
+        function updateTotalTime() {
+            const cells = document.querySelectorAll('.grid-cell');
+            let count = 0;
+            cells.forEach(c => {
+                if(c.style.backgroundColor && c.style.backgroundColor !== 'white' && c.style.backgroundColor !== 'transparent') count++;
+            });
+            const totalMins = count * 10;
+            const h = Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+            document.getElementById('total-time').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+        }
 
-                        <div className="flex flex-col lg:flex-row gap-8 border-t border-dark-800 pt-8 mt-4">
-                            <div className="flex-[3] border border-dark-700 bg-dark-800/20 p-4 h-44 relative rounded-2xl">
-                                <label className="absolute -top-3 left-3 bg-dark-900 px-2 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Memo / Reflection</label>
-                                <textarea
-                                    className="w-full h-full resize-none text-sm font-medium bg-transparent focus:outline-none text-white placeholder-neutral-700"
-                                    value=${state.notes}
-                                    onChange=${(e) => updateState({ notes: e.target.value })}
-                                    placeholder="Thoughts for tomorrow..."
-                                />
-                            </div>
-                            <div className="flex-[2] space-y-4">
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600">Quick Items</h4>
-                                <div className="space-y-3">
-                                    ${state.todo.map((item, i) => html`
-                                        <div key=${i} className="flex items-center gap-3 border-b border-dark-800 pb-1">
-                                            <div className="w-2 h-2 rounded-full border border-dark-600" />
-                                            <input
-                                                type="text"
-                                                value=${item}
-                                                onChange=${(e) => {
-                                                    const newTodo = [...state.todo];
-                                                    newTodo[i] = e.target.value;
-                                                    updateState({ todo: newTodo });
-                                                }}
-                                                className="flex-1 text-sm font-medium bg-transparent focus:outline-none text-neutral-300 placeholder-neutral-800"
-                                                placeholder="..."
-                                            />
-                                        </div>
-                                    `)}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-
-            useEffect(() => {
-                const unsubscribe = onAuthStateChanged(auth, (u) => {
-                    setUser(u);
-                    setLoading(false);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            if (loading) {
-                return html`
-                    <div className="min-h-screen flex items-center justify-center bg-dark-900 text-white">
-                        <div className="flex flex-col items-center">
-                            <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4 shadow-xl shadow-accent/20"></div>
-                            <p className="text-neutral-500 text-xs font-bold tracking-widest uppercase animate-pulse">Initializing System</p>
-                        </div>
-                    </div>
-                `;
+        const loadDate = async (dateStr) => {
+            if(!currentUser) return;
+            resetUI();
+            
+            let data = null;
+            if (currentUser.isLocal) {
+                const localData = localStorage.getItem(`planner_${currentUser.uid}_${dateStr}`);
+                if (localData) data = JSON.parse(localData);
+            } else {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'days', dateStr);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) data = snap.data();
             }
 
-            return user ? html`<${Planner} user=${user} />` : html`<${AuthForm} />`;
+            if(data) {
+                document.getElementById('goals').value = data.goals || "";
+                document.getElementById('notes').value = data.notes || "";
+                document.getElementById('todo').value = data.todo || "";
+                document.getElementById('total-time').innerText = data.totalTime || "00:00";
+
+                if(data.grid) {
+                    Object.entries(data.grid).forEach(([id, color]) => {
+                        const cell = document.querySelector(`[data-id="${id}"]`);
+                        if(cell) cell.style.backgroundColor = color;
+                    });
+                }
+
+                if(data.tasks && data.tasks.length > 0) {
+                    document.getElementById('tasks-list').innerHTML = '';
+                    data.tasks.forEach(t => addTaskLine(t));
+                } else {
+                    for(let i=0; i<10; i++) addTaskLine();
+                }
+            } else {
+                for(let i=0; i<10; i++) addTaskLine();
+            }
+        }
+
+        function resetUI() {
+            document.querySelectorAll('.grid-cell').forEach(c => c.style.backgroundColor = '');
+            document.getElementById('goals').value = "";
+            document.getElementById('notes').value = "";
+            document.getElementById('todo').value = "";
+            document.getElementById('total-time').innerText = "00:00";
+            document.getElementById('tasks-list').innerHTML = "";
+        }
+
+        function triggerSave() {
+            const indicator = document.getElementById('status-indicator');
+            indicator.style.opacity = '1';
+            
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+                if(!currentUser) return;
+                const date = document.getElementById('calendar-input').value;
+                if(!date) return;
+
+                const grid = {};
+                document.querySelectorAll('.grid-cell').forEach(c => {
+                    if(c.style.backgroundColor) grid[c.dataset.id] = c.style.backgroundColor;
+                });
+
+                const tasks = [];
+                document.querySelectorAll('.task-row').forEach(row => {
+                    const text = row.querySelector('.task-input').value;
+                    const done = row.querySelector('.task-check').checked;
+                    const color = row.querySelector('.task-color-picker').style.backgroundColor;
+                    const category = row.querySelector('.category-input').value;
+                    if(text || category) tasks.push({text, done, color, category});
+                });
+
+                const data = {
+                    goals: document.getElementById('goals').value,
+                    dayNumber: document.getElementById('day-number').value,
+                    notes: document.getElementById('notes').value,
+                    todo: document.getElementById('todo').value,
+                    month: document.querySelector('.month-item.active')?.innerText || "",
+                    weekday: document.querySelector('#weekday-selector .active')?.dataset.day || "",
+                    grid: grid,
+                    tasks: tasks,
+                    totalTime: document.getElementById('total-time').innerText
+                };
+
+                try {
+                    if (currentUser.isLocal) {
+                        localStorage.setItem(`planner_${currentUser.uid}_${date}`, JSON.stringify(data));
+                    } else {
+                        await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'days', date), data);
+                    }
+                    setTimeout(() => indicator.style.opacity = '0', 1000);
+                } catch (e) {
+                    console.error("Save error:", e);
+                }
+            }, 1000);
+        }
+
+        const handleAuthAction = async (type) => {
+            const err = document.getElementById('auth-error');
+            err.classList.add('hidden');
+            try {
+                if(type === 'login') {
+                    const email = document.getElementById('email').value;
+                    const pass = document.getElementById('password').value;
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } else if(type === 'guest') {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (e) {
+                        initApp({ uid: 'guest_local', isLocal: true });
+                    }
+                } else {
+                    const email = document.getElementById('email').value;
+                    const pass = document.getElementById('password').value;
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (e) {
+                err.innerText = "Error: " + e.message;
+                err.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('login-btn').onclick = () => handleAuthAction('login');
+        document.getElementById('guest-btn').onclick = () => handleAuthAction('guest');
+        document.getElementById('register-btn').onclick = () => handleAuthAction('register');
+        document.getElementById('logout-btn').onclick = () => {
+            if (currentUser?.isLocal) initApp(null);
+            else signOut(auth);
+        };
+        document.getElementById('add-task-btn').onclick = () => addTaskLine();
+        
+        // Eventos de cambio de fecha
+        document.getElementById('calendar-input').onchange = (e) => updateDateFromUI(e.target.value);
+
+        document.getElementById('day-number').onchange = (e) => {
+            const currentVal = document.getElementById('calendar-input').value;
+            const parts = currentVal.split('-');
+            const newDay = e.target.value.padStart(2, '0');
+            const newDate = `${parts[0]}-${parts[1]}-${newDay}`;
+            updateDateFromUI(newDate);
         };
 
-        const container = document.getElementById('root');
-        const root = createRoot(container);
-        root.render(html`<${App} />`);
+        onAuthStateChanged(auth, user => {
+            if (user) initApp(user);
+            else if (!currentUser?.isLocal) initApp(null);
+        });
+
     </script>
 </body>
 </html>
